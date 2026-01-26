@@ -550,6 +550,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addRecurringTemplate: async (input) => {
     const now = new Date().toISOString();
+
+    // v2: cria/garante tag de recorrência "R - Nome" (para baixa por pagamento)
+    const recurringTag = await get().ensureTagByName({
+      name: `R - ${input.description?.trim() || "Recorrente"}`,
+      type: "expense",
+      color: "#fb923c",
+      icon: "repeat",
+    });
+
     const rt: RecurringTemplate = {
       id: uuid(),
       user_id: "local",
@@ -562,6 +571,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       day_of_month: input.day_of_month ?? null,
       monthly_rule: input.monthly_rule ?? null,
       day_of_week: input.day_of_week ?? null,
+      recurring_tag_id: recurringTag.id,
+      due_day_of_month: input.due_day_of_month ?? null,
       start_date: input.start_date,
       end_date: input.end_date ?? null,
       created_at: now,

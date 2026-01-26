@@ -196,6 +196,10 @@ export type RecurringTemplate = {
   frequency: RecurringFrequency;
   day_of_month?: number | null;
   monthly_rule?: MonthlyRule | null;
+  // v2: tag própria para dar match no pagamento do mês (ex.: "R - Aluguel")
+  recurring_tag_id?: string | null;
+  // v2: dia de vencimento (para calendário); se nulo, usa o dia do mês da recorrência
+  due_day_of_month?: number | null;
   day_of_week?: number | null;
   start_date: string;
   end_date?: string | null;

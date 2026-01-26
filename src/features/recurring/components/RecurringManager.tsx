@@ -29,6 +29,7 @@ export default function RecurringManager() {
   const [dayOfMonth, setDayOfMonth] = useState("5");
   const [monthlyLastBusinessDay, setMonthlyLastBusinessDay] = useState(false);
   const [dayOfWeek, setDayOfWeek] = useState("1");
+  const [dueDay, setDueDay] = useState("");
   const [startDate, setStartDate] = useState(todayYMD());
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function RecurringManager() {
     setDayOfMonth("5");
     setMonthlyLastBusinessDay(false);
     setDayOfWeek("1");
+    setDueDay("");
     setStartDate(todayYMD());
     setEndDate("");
     setError(null);
@@ -71,6 +73,7 @@ export default function RecurringManager() {
     setDayOfMonth(String(rt.day_of_month ?? 5));
     setMonthlyLastBusinessDay(rt.monthly_rule === "lastBusinessDay");
     setDayOfWeek(String(rt.day_of_week ?? 1));
+    setDueDay(rt.due_day_of_month ? String(rt.due_day_of_month) : "");
     setStartDate(rt.start_date);
     setEndDate(rt.end_date ?? "");
     setError(null);
@@ -113,6 +116,10 @@ export default function RecurringManager() {
       day_of_week:
         frequency === "weekly"
           ? Math.min(6, Math.max(0, Number(dayOfWeek) || 0))
+          : null,
+      due_day_of_month:
+        frequency === "monthly" && dueDay.trim()
+          ? Math.min(31, Math.max(1, Number(dueDay) || 1))
           : null,
       start_date: startDate,
       end_date: endDate.trim() || null,
@@ -249,6 +256,21 @@ export default function RecurringManager() {
                     </div>
                   </div>
                 ) : null}
+
+                <div>
+                  <div className="text-sm font-semibold">Vencimento (opcional)</div>
+                  <div className="mt-1 text-xs text-[var(--muted)]">
+                    Se preenchido, o calendário usa esse dia como vencimento (1–31).
+                  </div>
+                  <div className="mt-2">
+                    <Input
+                      inputMode="numeric"
+                      value={dueDay}
+                      onChange={(e) => setDueDay(e.target.value)}
+                      placeholder="Ex: 10"
+                    />
+                  </div>
+                </div>
               </div>
             ) : null}
 

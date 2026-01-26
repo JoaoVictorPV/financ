@@ -8,6 +8,7 @@ import CalendarMonth from "@/features/calendar/components/CalendarMonth";
 import {
   buildCalendarEventsBetween,
   buildDayMarks,
+  groupDayBoxes,
   monthProjection,
 } from "@/features/calendar/domain/events";
 import { formatBRLFromCents } from "@/lib/money";
@@ -34,6 +35,8 @@ export default function CalendarPage() {
   const transactions = useAppStore((s) => s.transactions);
   const recurringTemplates = useAppStore((s) => s.recurringTemplates);
   const installmentPlans = useAppStore((s) => s.installmentPlans);
+  const cardPurchases = useAppStore((s) => s.cardPurchases);
+  const creditCards = useAppStore((s) => s.creditCards);
   const tags = useAppStore((s) => s.tags);
 
   const [selected, setSelected] = useState(todayYMD());
@@ -49,14 +52,30 @@ export default function CalendarPage() {
       transactions,
       recurringTemplates,
       installmentPlans,
+      cardPurchases,
     });
-  }, [range, transactions, recurringTemplates, installmentPlans]);
+  }, [range, transactions, recurringTemplates, installmentPlans, cardPurchases]);
 
   const marks = useMemo(() => buildDayMarks(events), [events]);
 
   const dayEvents = useMemo(
     () => events.filter((e) => e.date === selected),
     [events, selected],
+  );
+
+  const purchasesOfDay = useMemo(
+    () => cardPurchases.filter((p) => p.date === selected),
+    [cardPurchases, selected],
+  );
+
+  const creditCardsById = useMemo(
+    () => new Map(creditCards.map((c) => [c.id, { name: c.name, last4: c.last4 }])) ,
+    [creditCards],
+  );
+
+  const boxes = useMemo(
+    () => groupDayBoxes({ dayEvents, cardPurchases: purchasesOfDay, creditCardsById }),
+    [dayEvents, purchasesOfDay, creditCardsById],
   );
 
   const tagMap = useMemo(() => new Map(tags.map((t) => [t.id, t.name])), [tags]);
@@ -147,60 +166,116 @@ export default function CalendarPage() {
         <CalendarMonth base={base} marks={marks} selectedYmd={selected} onSelect={setSelected} />
       </div>
 
-      <Card className="space-y-2">
-        <div className="text-base font-semibold">Dia selecionado</div>
-        <div className="text-sm text-[var(--muted)]">{selected}</div>
-        <div className="mt-2 space-y-2">
-          {dayEvents.length === 0 ? (
-            <div className="text-sm text-[var(--muted)]">Sem eventos neste dia.</div>
-          ) : (
-            dayEvents.map((e) => (
-              <div key={e.id} className="rounded-xl border border-white/10 bg-black/10 px-3 py-2">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold">{e.title}</div>
-                    <div className="mt-1 text-xs text-[var(--muted)]">
-                      {e.type}
-                      {e.tags.length
-                        ? ` • ${e.tags.map((t) => tagMap.get(t)).filter(Boolean).join(", ")}`
-                        : ""}
-                    </div>
-                  </div>
-                  <div className="text-sm font-bold">{formatBRLFromCents(e.amount_cents)}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </Card>
+      <div className="space-y-3">
+        <div className="text-sm text-[var(--muted)]">Dia selecionado: {selected}</div>
 
-      <Card className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <div>
-            <div className="text-base font-semibold">Projeção do mês</div>
-            <div className="text-xs text-[var(--muted)]">{monthPrefix(ym.year, ym.month)}</div>
+        {/* Caixa A */}
+        <Card className="space-y-2">
+          <div className="text-base font-semibold">A — Despesas / Recorrentes</div>
+          <div className="mt-2 space-y-2">
+            {boxes.boxA.length === 0 ? (
+              <div className="text-sm text-[var(--muted)]">Sem despesas/recorrentes.</div>
+            ) : (
+              boxes.boxA.map((e) => (
+                <div
+                  key={e.id}
+                  className={
+                    "rounded-xl border border-white/10 px-3 py-2 " +
+                    (e.type === "recurring" ? "bg-orange-500/10" : "bg-red-500/10")
+                  }
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold">{e.title}</div>
+                      <div className="mt-1 text-xs text-[var(--muted)]">
+                        {e.type === "recurring" ? "recorrente" : "despesa"}
+                        {e.tags.length
+                          ? ` • ${e.tags.map((t) => tagMap.get(t)).filter(Boolean).join(", ")}`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className="text-sm font-bold">{formatBRLFromCents(e.amount_cents)}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="text-sm font-bold">{formatBRLFromCents(proj.net)}</div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-xs text-[var(--muted)]">Entradas</div>
-            <div className="text-sm font-bold">{formatBRLFromCents(proj.income)}</div>
+        </Card>
+
+        {/* Caixa B */}
+        <Card className="space-y-2">
+          <div className="text-base font-semibold">B — Entradas</div>
+          <div className="mt-2 space-y-2">
+            {boxes.boxB.length === 0 ? (
+              <div className="text-sm text-[var(--muted)]">Sem entradas.</div>
+            ) : (
+              boxes.boxB.map((e) => (
+                <div key={e.id} className="rounded-xl border border-white/10 bg-green-500/10 px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold">{e.title}</div>
+                      <div className="mt-1 text-xs text-[var(--muted)]">entrada</div>
+                    </div>
+                    <div className="text-sm font-bold">{formatBRLFromCents(e.amount_cents)}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-xs text-[var(--muted)]">Despesas</div>
-            <div className="text-sm font-bold">{formatBRLFromCents(proj.expense)}</div>
+        </Card>
+
+        {/* Caixa C */}
+        <Card className="space-y-2">
+          <div className="text-base font-semibold">C — Cartões</div>
+          <div className="mt-2 space-y-2">
+            {boxes.boxC.length === 0 ? (
+              <div className="text-sm text-[var(--muted)]">Sem compras no cartão neste dia.</div>
+            ) : (
+              boxes.boxC.map((c, idx) => (
+                <div key={idx} className="rounded-xl border border-white/10 bg-blue-500/10 px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold">{c.title}</div>
+                      <div className="mt-1 text-xs text-[var(--muted)]">compra no cartão</div>
+                    </div>
+                    <div className="text-sm font-bold">{formatBRLFromCents(c.amount_cents)}</div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-xs text-[var(--muted)]">Recorrências</div>
-            <div className="text-sm font-bold">{formatBRLFromCents(proj.recurring)}</div>
+        </Card>
+
+        {/* Caixa D */}
+        <Card className="space-y-2">
+          <div className="text-base font-semibold">D — Projeção do mês</div>
+          <div className="text-xs text-[var(--muted)]">{monthPrefix(ym.year, ym.month)}</div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="text-xs text-[var(--muted)]">Entradas</div>
+              <div className="text-sm font-bold">{formatBRLFromCents(proj.income)}</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="text-xs text-[var(--muted)]">Despesas</div>
+              <div className="text-sm font-bold">{formatBRLFromCents(proj.expense)}</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="text-xs text-[var(--muted)]">Recorrências</div>
+              <div className="text-sm font-bold">{formatBRLFromCents(proj.recurring)}</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="text-xs text-[var(--muted)]">Cartão (parcelas)</div>
+              <div className="text-sm font-bold">{formatBRLFromCents(proj.card)}</div>
+            </div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-xs text-[var(--muted)]">Cartão (parcelas)</div>
-            <div className="text-sm font-bold">{formatBRLFromCents(proj.card)}</div>
+          <div className="mt-2 flex items-baseline justify-between">
+            <div className="text-xs text-[var(--muted)]">Saldo projetado</div>
+            <div className="text-sm font-bold">{formatBRLFromCents(proj.net)}</div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
+
+      {/* (D foi movida para as caixas acima) */}
     </div>
   );
 }

@@ -7,9 +7,11 @@ export type ProjectedRecurringEvent = {
   template_id: string;
   kind: "expense" | "income";
   date: string; // YYYY-MM-DD
+  due_date?: string; // YYYY-MM-DD (quando vencimento difere da data do mês)
   description: string;
   amount_cents: number;
   tags: string[];
+  recurring_tag_id?: string | null;
 };
 
 export function projectRecurringBetween(
@@ -45,16 +47,24 @@ export function projectRecurringBetween(
           dateYmd = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
         }
 
-        const d = parseISO(dateYmd);
+        // vencimento opcional
+        const dueDay = t.due_day_of_month ?? null;
+        const dueYmd = dueDay
+          ? `${y}-${String(m).padStart(2, "0")}-${String(Math.min(28, Math.max(1, dueDay))).padStart(2, "0")}`
+          : null;
+
+        const d = parseISO(dueYmd ?? dateYmd);
         if (d >= from && d <= to) {
           out.push({
-            id: `${t.id}:${dateYmd}`,
+            id: `${t.id}:${dueYmd ?? dateYmd}`,
             template_id: t.id,
             kind: t.kind,
-            date: dateYmd,
+            date: dueYmd ?? dateYmd,
+            due_date: dueYmd ?? undefined,
             description: t.description,
             amount_cents: t.amount_cents,
             tags: t.tags,
+            recurring_tag_id: t.recurring_tag_id ?? null,
           });
         }
 

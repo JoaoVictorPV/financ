@@ -43,5 +43,6 @@ export async function seedSystemTags(snapshot: LocalSnapshot): Promise<LocalSnap
     incomeSources: snapshot.incomeSources ?? [],
     cardTags: snapshot.cardTags ?? [],
     cardPurchases: snapshot.cardPurchases ?? [],
+    recurringTemplates: snapshot.recurringTemplates ?? [],
   };
 }

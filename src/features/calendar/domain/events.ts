@@ -1,4 +1,5 @@
 import type {
+  CardPurchase,
   InstallmentPlan,
   RecurringTemplate,
   Transaction,
@@ -32,6 +33,7 @@ export function buildCalendarEventsBetween(input: {
   transactions: Transaction[];
   recurringTemplates: RecurringTemplate[];
   installmentPlans: InstallmentPlan[];
+  cardPurchases?: CardPurchase[];
 }): CalendarEvent[] {
   const { startYmd, endYmd, transactions, recurringTemplates, installmentPlans } = input;
 
@@ -53,9 +55,20 @@ export function buildCalendarEventsBetween(input: {
     });
   }
 
-  // recorrências projetadas
+  // recorrências projetadas (v2: mostra vencimento; esconde se já houver pagamento do mês)
   const projected = projectRecurringBetween(recurringTemplates, startYmd, endYmd);
   for (const pr of projected) {
+    const recurringTagId = pr.recurring_tag_id ?? null;
+    let paidThisMonth = false;
+    if (recurringTagId) {
+      const prefix = pr.date.slice(0, 7);
+      paidThisMonth = transactions.some(
+        (t) => t.kind === "expense" && t.date.startsWith(prefix) && t.tags.includes(recurringTagId),
+      );
+    }
+
+    if (paidThisMonth) continue;
+
     events.push({
       id: pr.id,
       type: "recurring",
@@ -63,7 +76,7 @@ export function buildCalendarEventsBetween(input: {
       title: pr.description,
       amount_cents: pr.amount_cents,
       tags: pr.tags,
-      meta: { template_id: pr.template_id, kind: pr.kind },
+      meta: { template_id: pr.template_id, kind: pr.kind, recurring_tag_id: recurringTagId },
     });
   }
 
@@ -91,6 +104,32 @@ export function buildCalendarEventsBetween(input: {
   }
 
   return events.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export function groupDayBoxes(input: {
+  dayEvents: CalendarEvent[];
+  // cartão é separado do restante e sempre aparece
+  cardPurchases: CardPurchase[];
+  creditCardsById: Map<string, { name: string; last4?: string | null }>;
+}): {
+  boxA: CalendarEvent[]; // despesas + recorrentes
+  boxB: CalendarEvent[]; // entradas
+  boxC: Array<{ title: string; amount_cents: number; date: string }>; // compras de cartão do dia
+} {
+  const boxA = input.dayEvents.filter((e) => e.type === "expense" || e.type === "recurring");
+  const boxB = input.dayEvents.filter((e) => e.type === "income");
+
+  const boxC = input.cardPurchases.map((p) => {
+    const c = input.creditCardsById.get(p.credit_card_id);
+    const label = c?.last4 ? `Cartão ${c.last4}` : c?.name ?? "Cartão";
+    return {
+      title: `${label}: ${p.description || "(sem descrição)"}`,
+      amount_cents: p.amount_cents,
+      date: p.date,
+    };
+  });
+
+  return { boxA, boxB, boxC };
 }
 
 export function buildDayMarks(events: CalendarEvent[]): Map<string, DayMark> {
