@@ -57,15 +57,17 @@ function lastNMonths(n: number): Array<{ year: number; month: number }> {
 export default function CardsManager() {
   const cards = useAppStore((s) => s.creditCards);
   const plans = useAppStore((s) => s.installmentPlans);
-  const transactions = useAppStore((s) => s.transactions);
+  const purchases = useAppStore((s) => s.cardPurchases);
   const cardPayments = useAppStore((s) => s.cardPayments);
   const addCreditCard = useAppStore((s) => s.addCreditCard);
   const deleteCreditCard = useAppStore((s) => s.deleteCreditCard);
   const addInstallmentPlan = useAppStore((s) => s.addInstallmentPlan);
   const markStatementPaid = useAppStore((s) => s.markStatementPaid);
+  const addCardPurchase = useAppStore((s) => s.addCardPurchase);
 
   const [openAdd, setOpenAdd] = useState(false);
   const [openInstallment, setOpenInstallment] = useState(false);
+  const [openPurchase, setOpenPurchase] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CreditCard | null>(null);
 
   const [cardName, setCardName] = useState("");
@@ -83,6 +85,11 @@ export default function CardsManager() {
   const [pTags, setPTags] = useState<string[]>([]);
   const tags = useAppStore((s) => s.tags);
   const [openTags, setOpenTags] = useState(false);
+
+  // Compra simples (à vista) - interna do cartão
+  const [cDate, setCDate] = useState(todayYMD());
+  const [cDesc, setCDesc] = useState("");
+  const [cAmount, setCAmount] = useState("");
 
   const months = useMemo(() => lastNMonths(6), []);
 
@@ -149,7 +156,7 @@ export default function CardsManager() {
   }
 
   async function onPay(card: CreditCard, year: number, month: number) {
-    const total = calcStatementTotalForMonth(card, year, month, transactions, plans);
+    const total = calcStatementTotalForMonth(card, year, month, purchases, plans);
     if (total <= 0) return;
     await markStatementPaid({
       creditCardId: card.id,
@@ -158,6 +165,27 @@ export default function CardsManager() {
       paidAt: todayYMD(),
       amountCents: total,
     });
+  }
+
+  async function onCreatePurchase() {
+    if (!selectedCard) return;
+    const cents = parseBRLToCents(cAmount);
+    if (!cents || cents <= 0) return;
+    if (!cDate) return;
+    if (!cDesc.trim()) return;
+
+    await addCardPurchase({
+      credit_card_id: selectedCard.id,
+      date: cDate,
+      description: cDesc,
+      amount_cents: cents,
+      card_tag_ids: [],
+    });
+
+    setCDate(todayYMD());
+    setCDesc("");
+    setCAmount("");
+    setOpenPurchase(false);
   }
 
   return (
@@ -204,7 +232,7 @@ export default function CardsManager() {
 
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {months.map(({ year, month }) => {
-                    const total = calcStatementTotalForMonth(c, year, month, transactions, plans);
+                    const total = calcStatementTotalForMonth(c, year, month, purchases, plans);
                     const paid = statementPaid(c.id, year, month);
                     return (
                       <button
@@ -249,9 +277,9 @@ export default function CardsManager() {
 
           <div className="space-y-2">
             {months.map(({ year, month }) => {
-              const total = calcStatementTotalForMonth(selectedCard, year, month, transactions, plans);
+              const total = calcStatementTotalForMonth(selectedCard, year, month, purchases, plans);
               const paid = statementPaid(selectedCard.id, year, month);
-              const items = buildStatementItems(selectedCard, year, month, transactions, plans);
+              const items = buildStatementItems(selectedCard, year, month, purchases, plans);
 
               return (
                 <details key={`${year}-${month}`} className="rounded-xl border border-white/10 bg-black/10 p-3">
@@ -274,6 +302,12 @@ export default function CardsManager() {
                     {!paid ? (
                       <Button size="md" onClick={() => void onPay(selectedCard, year, month)} disabled={total <= 0}>
                         Marcar como pago (integral)
+                      </Button>
+                    ) : null}
+
+                    {!paid ? (
+                      <Button variant="secondary" size="md" onClick={() => setOpenPurchase(true)}>
+                        Adicionar compra (à vista)
                       </Button>
                     ) : null}
 
@@ -461,6 +495,43 @@ export default function CardsManager() {
         <div className="mt-4">
           <Button variant="secondary" onClick={() => setOpenTags(false)}>
             Concluir
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={openPurchase}
+        onClose={() => setOpenPurchase(false)}
+        title="Compra no cartão"
+      >
+        <div className="space-y-3">
+          <div className="text-xs text-[var(--muted)]">
+            Esta compra é interna do cartão (não entra em gastos gerais). O que entra nos gastos gerais é o <b>pagamento da fatura</b>.
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold">Data</div>
+            <div className="mt-2">
+              <Input type="date" value={cDate} onChange={(e) => setCDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold">Descrição</div>
+            <div className="mt-2">
+              <Input value={cDesc} onChange={(e) => setCDesc(e.target.value)} placeholder="Ex: Uber, Mercado..." />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold">Valor</div>
+            <div className="mt-2">
+              <Input inputMode="decimal" value={cAmount} onChange={(e) => setCAmount(e.target.value)} placeholder="R$ 0,00" />
+            </div>
+          </div>
+
+          <Button onClick={() => void onCreatePurchase()} disabled={!selectedCard || !cDesc.trim()}>
+            Salvar compra
           </Button>
         </div>
       </BottomSheet>

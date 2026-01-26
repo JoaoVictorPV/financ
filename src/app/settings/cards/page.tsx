@@ -1,20 +1,20 @@
 import CardsManager from "@/features/credit-cards/components/CardsManager";
+import SettingsHeader from "@/components/layout/SettingsHeader";
 
 export default function CardsSettingsPage() {
   return (
     <div className="min-h-dvh bg-[var(--bg)] px-4 py-4 text-[var(--text)]">
       <div className="mx-auto w-full max-w-[520px] space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">Cartões</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Cadastre cartões, compras parceladas e registre pagamentos de fatura (integral).
-          </p>
-        </div>
+        <SettingsHeader
+          title="Cartões"
+          subtitle="Cadastre cartões, compras parceladas e registre pagamentos de fatura (integral)."
+        />
 
         <CardsManager />
       </div>
     </div>
   );
 }
+
 
 

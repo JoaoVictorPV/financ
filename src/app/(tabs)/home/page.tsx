@@ -18,7 +18,8 @@ export default function HomePage() {
   const [openIncome, setOpenIncome] = useState(false);
 
   const [balanceInput, setBalanceInput] = useState(() =>
-    account ? formatBRLFromCents(account.current_balance_cents) : "R$ 0,00",
+    // Mantém um formato simples para digitação (usuário costuma digitar "5000")
+    account ? String(Math.round(account.current_balance_cents / 100)) : "0",
   );
 
   const balanceHint = useMemo(() => {
@@ -31,7 +32,8 @@ export default function HomePage() {
     const cents = parseBRLToCents(balanceInput);
     if (cents === null) return;
     await setAccountBalanceCents(cents);
-    setBalanceInput(formatBRLFromCents(cents));
+    // após salvar, volta para um formato simples para próxima edição
+    setBalanceInput(String(Math.round(cents / 100)));
   }
 
   return (
@@ -44,7 +46,8 @@ export default function HomePage() {
               inputMode="decimal"
               value={balanceInput}
               onChange={(e) => setBalanceInput(e.target.value)}
-              onBlur={() => void onSaveBalance()}
+              // não salvar no blur (usuário pediu);
+              // salva somente no botão.
               placeholder="R$ 0,00"
             />
             <button

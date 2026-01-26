@@ -3,8 +3,11 @@
 import { create } from "zustand";
 import type {
   Account,
+  CardPurchase,
+  CardTag,
   CardPayment,
   CreditCard,
+  IncomeSource,
   InstallmentPlan,
   Investment,
   InvestmentSnapshot,
@@ -20,11 +23,17 @@ import {
 } from "@/state/utils/localPersistence";
 import { uuid } from "@/lib/ids";
 import { todayYMD } from "@/lib/dates";
+import { migrateLocalSnapshot } from "@/state/utils/migrations";
+
+const CARD_PAYMENT_TAG_COLOR = "#60a5fa";
 
 type AppState = {
   bootstrapped: boolean;
 
   tags: Tag[];
+  incomeSources: IncomeSource[];
+  cardTags: CardTag[];
+  cardPurchases: CardPurchase[];
   account: Account | null;
   transactions: Transaction[];
   creditCards: CreditCard[];
@@ -39,11 +48,15 @@ type AppState = {
 
   // Tags
   addTag: (input: Pick<Tag, "name" | "type" | "color" | "icon">) => Promise<Tag>;
+  ensureTagByName: (input: Pick<Tag, "name" | "type" | "color" | "icon">) => Promise<Tag>;
   updateTag: (
     id: string,
     patch: Partial<Pick<Tag, "name" | "type" | "color" | "icon">>,
   ) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+
+  // Fontes de renda
+  ensureIncomeSource: (input: { name: string; color?: string }) => Promise<IncomeSource>;
 
   // Conta
   setAccountBalanceCents: (balanceCents: number) => Promise<void>;
@@ -52,6 +65,13 @@ type AppState = {
   addTransaction: (
     input: Pick<Transaction, "kind" | "amount_cents" | "date" | "description" | "tags" | "is_recurring" | "credit_card_id">,
   ) => Promise<Transaction>;
+  // Entrada (com fonte): cria a fonte automaticamente (se não existir)
+  addIncome: (input: {
+    amount_cents: number;
+    date: string;
+    description: string;
+    income_source_id?: string | null;
+  }) => Promise<Transaction>;
   updateTransaction: (
     id: string,
     patch: Partial<
@@ -67,6 +87,14 @@ type AppState = {
   addCreditCard: (
     input: Pick<CreditCard, "name" | "statement_closing_day" | "statement_due_day" | "brand" | "last4">,
   ) => Promise<CreditCard>;
+  addCardPurchase: (input: {
+    credit_card_id: string;
+    date: string;
+    description: string;
+    amount_cents: number;
+    card_tag_ids?: string[];
+  }) => Promise<CardPurchase>;
+  // Marca uma fatura como paga e registra despesa geral (tag automática do cartão).
   deleteCreditCard: (id: string) => Promise<void>;
 
   // Parcelamento
@@ -121,6 +149,9 @@ type AppState = {
 function snapshotFromState(s: AppState): LocalSnapshot {
   return {
     tags: s.tags,
+    incomeSources: s.incomeSources,
+    cardTags: s.cardTags,
+    cardPurchases: s.cardPurchases,
     account: s.account,
     transactions: s.transactions,
     creditCards: s.creditCards,
@@ -135,6 +166,9 @@ function snapshotFromState(s: AppState): LocalSnapshot {
 export const useAppStore = create<AppState>((set, get) => ({
   bootstrapped: false,
   tags: [],
+  incomeSources: [],
+  cardTags: [],
+  cardPurchases: [],
   account: null,
   transactions: [],
   creditCards: [],
@@ -149,8 +183,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     const local = await loadAllLocal();
 
+    // Migra snapshot (preserva dados antigos)
+    let seeded = migrateLocalSnapshot(local);
+
     // Se não existe nada ainda, cria tags padrão
-    let seeded = local.tags.length ? local : await seedSystemTags(local);
+    seeded = seeded.tags.length ? seeded : await seedSystemTags(seeded);
 
     // Cria conta padrão se não existir
     if (!seeded.account) {
@@ -174,6 +211,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       bootstrapped: true,
       tags: seeded.tags,
+      incomeSources: seeded.incomeSources,
+      cardTags: seeded.cardTags,
+      cardPurchases: seeded.cardPurchases,
       account: seeded.account,
       transactions: seeded.transactions,
       creditCards: seeded.creditCards,
@@ -190,6 +230,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   replaceAll: async (snapshot) => {
     set({
       tags: snapshot.tags,
+      incomeSources: snapshot.incomeSources,
+      cardTags: snapshot.cardTags,
+      cardPurchases: snapshot.cardPurchases,
       account: snapshot.account,
       transactions: snapshot.transactions,
       creditCards: snapshot.creditCards,
@@ -221,6 +264,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     return tag;
   },
 
+  ensureTagByName: async (input) => {
+    const name = input.name.trim();
+    const existing = get().tags.find((t) => t.name.trim().toLowerCase() === name.toLowerCase());
+    if (existing) return existing;
+    return get().addTag(input);
+  },
+
   updateTag: async (id, patch) => {
     const now = new Date().toISOString();
     const next = get().tags.map((t) =>
@@ -248,6 +298,30 @@ export const useAppStore = create<AppState>((set, get) => ({
       transactions: txNext,
       recurringTemplates: recNext,
     });
+  },
+
+  ensureIncomeSource: async (input) => {
+    const name = input.name.trim();
+    if (!name) throw new Error("Nome inválido");
+
+    const existing = get().incomeSources.find(
+      (s) => s.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) return existing;
+
+    const now = new Date().toISOString();
+    const src: IncomeSource = {
+      id: uuid(),
+      user_id: "local",
+      name,
+      color: input.color ?? "#22c55e",
+      created_at: now,
+      updated_at: now,
+    };
+    const next = [...get().incomeSources, src].sort((a, b) => a.name.localeCompare(b.name));
+    set({ incomeSources: next });
+    await saveAllLocal({ ...snapshotFromState(get()), incomeSources: next });
+    return src;
   },
 
   setAccountBalanceCents: async (balanceCents) => {
@@ -279,6 +353,42 @@ export const useAppStore = create<AppState>((set, get) => ({
       payment_method: input.credit_card_id ? "credit" : "pix",
       account_id: null,
       credit_card_id: input.credit_card_id ?? null,
+      card_tag_ids: null,
+      income_source_id: null,
+      installment_plan_id: null,
+      created_at: now,
+      updated_at: now,
+    };
+    const next = [tx, ...get().transactions].sort((a, b) => b.date.localeCompare(a.date));
+    set({ transactions: next });
+    await saveAllLocal({ ...snapshotFromState(get()), transactions: next });
+    return tx;
+  },
+
+  addIncome: async (input) => {
+    const now = new Date().toISOString();
+    const desc = input.description?.trim() || "";
+    const forced = input.income_source_id ?? null;
+    const src = forced
+      ? get().incomeSources.find((s) => s.id === forced) ?? null
+      : desc
+        ? await get().ensureIncomeSource({ name: desc })
+        : null;
+    const tx: Transaction = {
+      id: uuid(),
+      user_id: "local",
+      kind: "income",
+      amount_cents: input.amount_cents,
+      currency: "BRL",
+      date: input.date || todayYMD(),
+      description: desc,
+      tags: [],
+      is_recurring: false,
+      payment_method: "transfer",
+      account_id: null,
+      credit_card_id: null,
+      card_tag_ids: null,
+      income_source_id: src ? src.id : null,
       installment_plan_id: null,
       created_at: now,
       updated_at: now,
@@ -313,12 +423,23 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addCreditCard: async (input) => {
     const now = new Date().toISOString();
+
+    // cria tag automática "Cartão XXXX" para uso em pagamentos de fatura
+    const last4 = input.last4?.trim() || null;
+    const paymentTag = await get().ensureTagByName({
+      name: `Cartão ${last4 ?? input.name.trim()}`,
+      type: "expense",
+      color: CARD_PAYMENT_TAG_COLOR,
+      icon: "credit-card",
+    });
+
     const card: CreditCard = {
       id: uuid(),
       user_id: "local",
       name: input.name.trim(),
       brand: input.brand ?? null,
       last4: input.last4 ?? null,
+      payment_tag_id: paymentTag.id,
       statement_closing_day: input.statement_closing_day,
       statement_due_day: input.statement_due_day ?? null,
       created_at: now,
@@ -330,17 +451,40 @@ export const useAppStore = create<AppState>((set, get) => ({
     return card;
   },
 
+  addCardPurchase: async (input) => {
+    const now = new Date().toISOString();
+    const p: CardPurchase = {
+      id: uuid(),
+      user_id: "local",
+      credit_card_id: input.credit_card_id,
+      date: input.date || todayYMD(),
+      description: input.description?.trim() || "",
+      amount_cents: input.amount_cents,
+      total_installments: null,
+      installment_amount_cents: null,
+      card_tag_ids: input.card_tag_ids ?? [],
+      created_at: now,
+      updated_at: now,
+    };
+    const next = [p, ...get().cardPurchases].sort((a, b) => b.date.localeCompare(a.date));
+    set({ cardPurchases: next });
+    await saveAllLocal({ ...snapshotFromState(get()), cardPurchases: next });
+    return p;
+  },
+
   deleteCreditCard: async (id) => {
     const cards = get().creditCards.filter((c) => c.id !== id);
+    const purchases = get().cardPurchases.filter((p) => p.credit_card_id !== id);
     const plans = get().installmentPlans.filter((p) => p.credit_card_id !== id);
     const tx = get().transactions.map((t) =>
       t.credit_card_id === id ? { ...t, credit_card_id: null } : t,
     );
     const payments = get().cardPayments.filter((p) => !p.statement_id.startsWith(`${id}:`));
-    set({ creditCards: cards, installmentPlans: plans, transactions: tx, cardPayments: payments });
+    set({ creditCards: cards, cardPurchases: purchases, installmentPlans: plans, transactions: tx, cardPayments: payments });
     await saveAllLocal({
       ...snapshotFromState(get()),
       creditCards: cards,
+      cardPurchases: purchases,
       installmentPlans: plans,
       transactions: tx,
       cardPayments: payments,
@@ -383,6 +527,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       created_at: now,
     };
     const next = [payment, ...get().cardPayments];
+
+    // Também registra o pagamento como DESPESA geral com a tag automática do cartão
+    const card = get().creditCards.find((c) => c.id === input.creditCardId);
+    const tagId = card?.payment_tag_id ?? null;
+    if (tagId) {
+      await get().addTransaction({
+        kind: "expense",
+        amount_cents: input.amountCents,
+        date: input.paidAt,
+        description: `Pagamento fatura ${card?.last4 ? `Cartão ${card.last4}` : card?.name ?? "Cartão"} ${String(input.month).padStart(2, "0")}/${input.year}`,
+        tags: [tagId],
+        is_recurring: false,
+        credit_card_id: null,
+      });
+    }
+
     set({ cardPayments: next });
     await saveAllLocal({ ...snapshotFromState(get()), cardPayments: next });
     return payment;

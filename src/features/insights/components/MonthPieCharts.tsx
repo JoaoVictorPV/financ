@@ -24,11 +24,13 @@ function currentMonthPrefix(): string {
 
 export default function MonthPieCharts() {
   const tags = useAppStore((s) => s.tags);
+  const incomeSources = useAppStore((s) => s.incomeSources);
   const transactions = useAppStore((s) => s.transactions);
 
   const monthPrefix = useMemo(() => currentMonthPrefix(), []);
 
   const tagMap = useMemo(() => new Map(tags.map((t) => [t.id, t])), [tags]);
+  const incomeMap = useMemo(() => new Map(incomeSources.map((s) => [s.id, s])), [incomeSources]);
 
   const { expenseSeries, incomeSeries, expenseTotal, incomeTotal } = useMemo(() => {
     const expense = new Map<string, number>();
@@ -36,10 +38,16 @@ export default function MonthPieCharts() {
 
     for (const tx of transactions) {
       if (!tx.date.startsWith(monthPrefix)) continue;
-      const bucket = tx.kind === "expense" ? expense : income;
-      const useTags = tx.tags.length ? tx.tags : ["__sem_tag__"];
-      for (const tid of useTags) {
-        bucket.set(tid, (bucket.get(tid) ?? 0) + tx.amount_cents);
+
+      if (tx.kind === "expense") {
+        const useTags = tx.tags.length ? tx.tags : ["__sem_tag__"];
+        for (const tid of useTags) {
+          expense.set(tid, (expense.get(tid) ?? 0) + tx.amount_cents);
+        }
+      } else {
+        // Entradas agrupam por fonte (income_source_id). Fallback: "Sem fonte".
+        const sid = tx.income_source_id ?? "__sem_fonte__";
+        income.set(sid, (income.get(sid) ?? 0) + tx.amount_cents);
       }
     }
 
@@ -56,13 +64,22 @@ export default function MonthPieCharts() {
         .sort((a, b) => b.value - a.value);
 
     const expenseSeries = toSeries(expense);
-    const incomeSeries = toSeries(income);
+    const incomeSeries = [...income.entries()]
+      .map(([sid, value]) => {
+        const src = incomeMap.get(sid);
+        return {
+          name: src ? src.name : "Sem fonte",
+          value,
+          itemStyle: { color: src ? src.color : "#22c55e" },
+        };
+      })
+      .sort((a, b) => b.value - a.value);
 
     const expenseTotal = expenseSeries.reduce((acc, x) => acc + x.value, 0);
     const incomeTotal = incomeSeries.reduce((acc, x) => acc + x.value, 0);
 
     return { expenseSeries, incomeSeries, expenseTotal, incomeTotal };
-  }, [transactions, monthPrefix, tagMap]);
+  }, [transactions, monthPrefix, tagMap, incomeMap]);
 
   return (
     <div className="grid grid-cols-1 gap-3">

@@ -32,6 +32,27 @@ export type Tag = {
   updated_at: string;
 };
 
+// Fontes de renda (tags próprias para entradas)
+export type IncomeSource = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// Tags internas de cartão (não entram nos gráficos gerais)
+export type CardTag = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  icon?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Account = {
   id: string;
   user_id: string;
@@ -57,6 +78,10 @@ export type Transaction = {
   payment_method: PaymentMethod;
   account_id?: string | null;
   credit_card_id?: string | null;
+  // tags internas do cartão (apenas quando credit_card_id != null)
+  card_tag_ids?: string[] | null;
+  // fonte de renda (apenas quando kind=income)
+  income_source_id?: string | null;
   installment_plan_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -68,8 +93,27 @@ export type CreditCard = {
   name: string;
   brand?: string | null;
   last4?: string | null;
+  // tag global criada automaticamente para registrar pagamento de fatura como despesa
+  payment_tag_id?: string | null;
   statement_closing_day: number;
   statement_due_day?: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// Compra de cartão (não entra em gastos gerais; apenas no módulo de cartão)
+export type CardPurchase = {
+  id: string;
+  user_id: string;
+  credit_card_id: string;
+  date: string; // YYYY-MM-DD
+  description: string;
+  amount_cents: number;
+  // parcelamento opcional
+  total_installments?: number | null;
+  installment_amount_cents?: number | null;
+  // tags internas do cartão
+  card_tag_ids: string[];
   created_at: string;
   updated_at: string;
 };

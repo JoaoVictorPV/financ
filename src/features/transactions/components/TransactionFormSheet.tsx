@@ -6,6 +6,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Switch from "@/components/ui/Switch";
 import TagPicker from "@/components/tags/TagPicker";
+import IncomeSourcePicker from "@/features/income/components/IncomeSourcePicker";
 import { parseBRLToCents } from "@/lib/money";
 import { todayYMD } from "@/lib/dates";
 import { useAppStore } from "@/state/useAppStore";
@@ -21,12 +22,14 @@ export default function TransactionFormSheet({
   kind: TransactionKind;
 }) {
   const addTransaction = useAppStore((s) => s.addTransaction);
+  const addIncome = useAppStore((s) => s.addIncome);
   const creditCards = useAppStore((s) => s.creditCards);
 
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(todayYMD());
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [useCard, setUseCard] = useState(false);
   const [cardId, setCardId] = useState<string | null>(null);
@@ -47,19 +50,31 @@ export default function TransactionFormSheet({
       return;
     }
 
-    await addTransaction({
-      kind,
-      amount_cents: amountCents,
-      date,
-      description,
-      tags,
-      is_recurring: isRecurring,
-      credit_card_id: useCard ? cardId : null,
-    });
+    if (kind === "income") {
+      // Entradas usam o sistema próprio de fontes (tags de renda)
+      // A descrição vira a fonte automaticamente (regra do usuário).
+      await addIncome({
+        amount_cents: amountCents,
+        date,
+        description,
+        income_source_id: incomeSourceId,
+      });
+    } else {
+      await addTransaction({
+        kind,
+        amount_cents: amountCents,
+        date,
+        description,
+        tags,
+        is_recurring: isRecurring,
+        credit_card_id: useCard ? cardId : null,
+      });
+    }
 
     setAmount("");
     setDescription("");
     setTags([]);
+    setIncomeSourceId(null);
     setIsRecurring(false);
     setUseCard(false);
     setCardId(null);
@@ -99,17 +114,25 @@ export default function TransactionFormSheet({
           </div>
         </div>
 
-        <TagPicker selected={tags} onChange={setTags} />
+        {kind === "income" ? (
+          <IncomeSourcePicker selectedId={incomeSourceId} onChange={setIncomeSourceId} />
+        ) : (
+          <TagPicker selected={tags} onChange={setTags} />
+        )}
 
-        <Switch checked={isRecurring} onChange={setIsRecurring} label="Recorrente" />
-        <Switch
-          checked={useCard}
-          onChange={(v) => {
-            setUseCard(v);
-            if (!v) setCardId(null);
-          }}
-          label="Cartão"
-        />
+        {kind === "expense" ? (
+          <>
+            <Switch checked={isRecurring} onChange={setIsRecurring} label="Recorrente" />
+            <Switch
+              checked={useCard}
+              onChange={(v) => {
+                setUseCard(v);
+                if (!v) setCardId(null);
+              }}
+              label="Cartão"
+            />
+          </>
+        ) : null}
 
         {useCard ? (
           <div className="rounded-xl border border-white/10 bg-black/10 p-3">

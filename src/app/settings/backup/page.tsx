@@ -8,6 +8,7 @@ import { loadAllLocal } from "@/state/utils/localPersistence";
 import { downloadJson, snapshotToBackup } from "@/features/backup/localBackup";
 import { BackupSchemaV1 } from "@/features/backup/schema";
 import type { LocalSnapshot } from "@/state/utils/localPersistence";
+import SettingsHeader from "@/components/layout/SettingsHeader";
 
 export default function BackupSettingsPage() {
   const replaceAll = useAppStore((s) => s.replaceAll);
@@ -41,9 +42,12 @@ export default function BackupSettingsPage() {
     const b = parsed.data;
     const snap: LocalSnapshot = {
       tags: b.tags as LocalSnapshot["tags"],
+      incomeSources: (b.incomeSources ?? []) as LocalSnapshot["incomeSources"],
+      cardTags: (b.cardTags ?? []) as LocalSnapshot["cardTags"],
       account: b.account as LocalSnapshot["account"],
       transactions: b.transactions as LocalSnapshot["transactions"],
       creditCards: b.creditCards as LocalSnapshot["creditCards"],
+      cardPurchases: (b.cardPurchases ?? []) as LocalSnapshot["cardPurchases"],
       installmentPlans: b.installmentPlans as LocalSnapshot["installmentPlans"],
       cardPayments: b.cardPayments as LocalSnapshot["cardPayments"],
       recurringTemplates: b.recurringTemplates as LocalSnapshot["recurringTemplates"],
@@ -56,12 +60,10 @@ export default function BackupSettingsPage() {
   return (
     <div className="min-h-dvh bg-[var(--bg)] px-4 py-4 text-[var(--text)]">
       <div className="mx-auto w-full max-w-[520px] space-y-4">
-        <div>
-          <h1 className="text-xl font-semibold">Backup</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Exporte/importa seus dados em JSON. Recomendação: 1x por semana.
-          </p>
-        </div>
+        <SettingsHeader
+          title="Backup"
+          subtitle="Exporte/importa seus dados em JSON. Recomendação: 1x por semana."
+        />
 
         {error ? <div className="text-sm text-[var(--danger)]">{error}</div> : null}
 
@@ -93,6 +95,8 @@ export default function BackupSettingsPage() {
     </div>
   );
 }
+
+
 
 
 

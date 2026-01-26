@@ -36,5 +36,12 @@ export async function seedSystemTags(snapshot: LocalSnapshot): Promise<LocalSnap
     updated_at: now,
   }));
 
-  return { ...snapshot, tags };
+  // Garante campos novos (v2) sem quebrar backups antigos.
+  return {
+    ...snapshot,
+    tags,
+    incomeSources: snapshot.incomeSources ?? [],
+    cardTags: snapshot.cardTags ?? [],
+    cardPurchases: snapshot.cardPurchases ?? [],
+  };
 }
