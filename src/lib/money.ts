@@ -60,5 +60,15 @@ export function parseBRLToCents(raw: string): Cents | null {
 
   const n = Number(normalized);
   if (!Number.isFinite(n)) return null;
+
+  // both paths: cents = reais * 100
   return hasDecimal ? Math.round(n * 100) : Math.round(n * 100);
+}
+
+/**
+ * Converte um valor em centavos para um input simples (reais, sem formatação).
+ * Ex: 123450 -> "1234"
+ */
+export function centsToSimpleInput(valueCents: number): string {
+  return String(Math.round(valueCents / 100));
 }

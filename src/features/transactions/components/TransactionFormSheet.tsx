@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import BottomSheet from "@/components/ui/BottomSheet";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import Switch from "@/components/ui/Switch";
 import TagPicker from "@/components/tags/TagPicker";
 import IncomeSourcePicker from "@/features/income/components/IncomeSourcePicker";
 import { parseBRLToCents } from "@/lib/money";
@@ -23,16 +22,12 @@ export default function TransactionFormSheet({
 }) {
   const addTransaction = useAppStore((s) => s.addTransaction);
   const addIncome = useAppStore((s) => s.addIncome);
-  const creditCards = useAppStore((s) => s.creditCards);
 
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(todayYMD());
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [incomeSourceId, setIncomeSourceId] = useState<string | null>(null);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [useCard, setUseCard] = useState(false);
-  const [cardId, setCardId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const title = kind === "expense" ? "Nova despesa" : "Nova entrada";
@@ -43,10 +38,6 @@ export default function TransactionFormSheet({
     setError(null);
     if (!amountCents || amountCents <= 0) {
       setError("Informe um valor válido.");
-      return;
-    }
-    if (useCard && !cardId) {
-      setError("Selecione um cartão.");
       return;
     }
 
@@ -66,8 +57,10 @@ export default function TransactionFormSheet({
         date,
         description,
         tags,
-        is_recurring: isRecurring,
-        credit_card_id: useCard ? cardId : null,
+        // IMPORTANTE: este modal é APENAS para despesa normal.
+        // Recorrências e cartão têm modais específicos (Home).
+        is_recurring: false,
+        credit_card_id: null,
       });
     }
 
@@ -75,15 +68,22 @@ export default function TransactionFormSheet({
     setDescription("");
     setTags([]);
     setIncomeSourceId(null);
-    setIsRecurring(false);
-    setUseCard(false);
-    setCardId(null);
     onClose();
   }
 
   return (
     <BottomSheet open={open} onClose={onClose} title={title}>
       <div className="space-y-3">
+        {kind === "income" ? (
+          <div className="rounded-xl border border-white/10 bg-black/10 p-3 text-sm text-[var(--muted)]">
+            <div className="font-semibold text-[var(--text)]">Como funciona a fonte da entrada</div>
+            <div className="mt-1">
+              Selecione uma <b>Fonte</b> (ex: Salário, Freelance) ou digite uma nova.
+              Essa fonte é usada nos gráficos de entradas.
+            </div>
+          </div>
+        ) : null}
+
         <div>
           <div className="text-sm font-semibold">Valor</div>
           <div className="mt-2">
@@ -104,10 +104,12 @@ export default function TransactionFormSheet({
         </div>
 
         <div>
-          <div className="text-sm font-semibold">Descrição (opcional)</div>
+          <div className="text-sm font-semibold">
+            {kind === "income" ? "Descrição / Fonte (opcional)" : "Descrição (opcional)"}
+          </div>
           <div className="mt-2">
             <Input
-              placeholder="Ex: almoço, mercado..."
+              placeholder={kind === "income" ? "Ex: Salário, Freelance..." : "Ex: almoço, mercado..."}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -119,51 +121,6 @@ export default function TransactionFormSheet({
         ) : (
           <TagPicker selected={tags} onChange={setTags} />
         )}
-
-        {kind === "expense" ? (
-          <>
-            <Switch checked={isRecurring} onChange={setIsRecurring} label="Recorrente" />
-            <Switch
-              checked={useCard}
-              onChange={(v) => {
-                setUseCard(v);
-                if (!v) setCardId(null);
-              }}
-              label="Cartão"
-            />
-          </>
-        ) : null}
-
-        {useCard ? (
-          <div className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-sm font-semibold">Selecionar cartão</div>
-            <div className="mt-2 space-y-2">
-              {creditCards.length === 0 ? (
-                <div className="text-sm text-[var(--muted)]">
-                  Nenhum cartão cadastrado ainda. Vá em Config → Cartões.
-                </div>
-              ) : (
-                creditCards.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => setCardId(c.id)}
-                    className={
-                      "flex w-full items-center justify-between rounded-xl px-3 py-2 " +
-                      (cardId === c.id ? "bg-white/10" : "hover:bg-white/5")
-                    }
-                  >
-                    <div className="text-sm font-semibold">{c.name}</div>
-                    <div className="text-xs text-[var(--muted)]">
-                      fecha {c.statement_closing_day}
-                      {c.statement_due_day ? ` / vence ${c.statement_due_day}` : ""}
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        ) : null}
 
         {error ? <div className="text-sm text-[var(--danger)]">{error}</div> : null}
 

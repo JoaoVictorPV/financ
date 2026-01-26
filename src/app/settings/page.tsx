@@ -1,13 +1,14 @@
 import Link from "next/link";
+import SettingsHeader from "@/components/layout/SettingsHeader";
 
 export default function SettingsPage() {
   return (
     <div className="min-h-dvh bg-[var(--bg)] text-[var(--text)]">
       <header className="mx-auto w-full max-w-[520px] px-4 py-4">
-        <h1 className="text-xl font-semibold">Configurações</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">
-          Backup, Tags, Cartões, Conta e Recorrências.
-        </p>
+        <SettingsHeader
+          title="Configurações"
+          subtitle="Backup, Tags, Cartões, Conta e Recorrências."
+        />
       </header>
 
       <main className="mx-auto w-full max-w-[520px] space-y-2 px-4 pb-10">
