@@ -2,6 +2,9 @@ export type MarketValues = {
   usd_brl?: number;
   eur_brl?: number;
   cny_brl?: number;
+  jpy_brl?: number;
+  usd_jpy?: number;
+  usd_cny?: number;
   btc_brl?: number;
   btc_usd?: number;
   btc_dominance?: number;
@@ -12,6 +15,8 @@ export type MarketValues = {
   gold_silver_ratio?: number;
   gold_brl_oz?: number;
   gold_brl_g?: number;
+  silver_brl_oz?: number;
+  silver_brl_g?: number;
 
   // China (manual/API)
   sge_cny_g?: number;
@@ -22,6 +27,13 @@ export type MarketValues = {
   t10y2y?: number;
   m2_usd_bil?: number;
 
+  // EUA (juros / stress)
+  us2y?: number;
+  us10y?: number;
+  fed_funds?: number;
+  vix?: number;
+  tips10y_real_yield?: number;
+
   // Brasil
   brl_selic_aa?: number;
   brl_ipca_mom?: number;
@@ -30,6 +42,29 @@ export type MarketValues = {
   brl_selic_real_fisher?: number;
 
   brazil_cds_5y_bps?: number;
+
+  // Commodities (USD)
+  wti_usd_bbl?: number;
+  wti_brl_bbl?: number;
+  natgas_usd_mmbtu?: number;
+  copper_usd?: number;
+  wheat_usd?: number;
+  corn_usd?: number;
+  soy_usd?: number;
+  sugar_usd?: number;
+  coffee_usd?: number;
+  cotton_usd?: number;
+  platinum_usd_oz?: number;
+  palladium_usd_oz?: number;
+  gasoline_usd?: number;
+  heating_oil_usd?: number;
+  aluminum_usd?: number;
+  nickel_usd?: number;
+
+  // “Elementos críticos” via ETFs (proxy)
+  etf_ura_usd?: number;
+  etf_lit_usd?: number;
+  etf_remx_usd?: number;
 
   // Bolsas globais (nível índice)
   stocks?: Record<string, { value?: number; change_pct?: number }>;
@@ -41,6 +76,7 @@ export type MarketManualOverrides = {
   updatedAt: string;
   sge_cny_g?: number;
   brazil_cds_5y_bps?: number;
+  ibov_index?: number;
 };
 
 export type MarketPayload = {
@@ -56,6 +92,24 @@ export type MarketPayload = {
   };
   meta?: {
     stale?: boolean;
+    note?: string;
+    errors?: string[];
+  };
+};
+
+export type MarketHistoryPoint = [string, number];
+
+export type MarketHistorySeries = {
+  id: string;
+  label: string;
+  unit: string;
+  points: MarketHistoryPoint[];
+};
+
+export type MarketHistoryPayload = {
+  fetchedAt: string;
+  series: MarketHistorySeries[];
+  meta?: {
     note?: string;
     errors?: string[];
   };

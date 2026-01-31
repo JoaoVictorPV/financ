@@ -12,6 +12,7 @@ const tabs: TabItem[] = [
   { href: "/home", label: "Início" },
   { href: "/calendar", label: "Calendário" },
   { href: "/investments", label: "Invest." },
+  { href: "/markets", label: "Mercados" },
   { href: "/insights", label: "Insights" },
 ];
 
@@ -20,7 +21,7 @@ export default function TabBar() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[var(--bg)]/85 backdrop-blur">
-      <div className="mx-auto grid w-full max-w-[520px] grid-cols-4 gap-2 px-4 py-3">
+      <div className="mx-auto grid w-full max-w-[520px] grid-cols-5 gap-2 px-4 py-3">
         {tabs.map((t) => {
           const active = pathname === t.href;
           return (
