@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import BottomSheet from "@/components/ui/BottomSheet";
 import type { MarketPayload } from "@/features/market/domain/types";
+import MarketCatalogSheet from "@/features/market/components/MarketCatalogSheet";
 
 function formatNumber(n: number, digits = 2) {
   return new Intl.NumberFormat("pt-BR", {
@@ -19,7 +19,6 @@ export default function MarketPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // carrega cache local instantaneamente para não ficar "vazio" enquanto a API busca dados
   useEffect(() => {
@@ -465,52 +464,8 @@ export default function MarketPanel() {
         Ver todos os índices
       </Button>
 
-      <BottomSheet open={open} onClose={() => setOpen(false)} title="Índices completos">
-        <div className="space-y-4">
-          <Card className="space-y-2">
-            <div className="text-sm font-semibold">Stress Geopolítico</div>
-            <div className="text-xs text-[var(--muted)]">
-              Nível: <b>{stress.level}</b>
-            </div>
-            <div className="text-xs text-[var(--muted)]">{stress.note}</div>
-          </Card>
-
-          {groups.map((g) => (
-            <div key={g.id} className="space-y-2">
-              <div className="text-sm font-semibold">{g.title}</div>
-              <div className="space-y-2">
-                {g.items.map((it) => {
-                  const expanded = expandedId === it.id;
-                  return (
-                    <button
-                      key={it.id}
-                      type="button"
-                      onClick={() => setExpandedId(expanded ? null : it.id)}
-                      className="w-full rounded-2xl border border-white/10 bg-black/10 p-3 text-left"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold">{it.label}</div>
-                          <div className="text-xs text-[var(--muted)]">{it.value}</div>
-                        </div>
-                        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
-                          {expanded ? "Fechar" : "Detalhes"}
-                        </div>
-                      </div>
-
-                      {expanded ? (
-                        <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[var(--muted)]">
-                          {it.help}
-                        </div>
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </BottomSheet>
+      {/* Novo modal (bem mais organizado) */}
+      <MarketCatalogSheet open={open} onClose={() => setOpen(false)} data={data} />
     </Card>
   );
 }
