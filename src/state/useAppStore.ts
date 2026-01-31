@@ -25,6 +25,8 @@ import { uuid } from "@/lib/ids";
 import { todayYMD } from "@/lib/dates";
 import { migrateLocalSnapshot } from "@/state/utils/migrations";
 
+import type { MarketManualOverrides } from "@/features/market/domain/types";
+
 const CARD_PAYMENT_TAG_COLOR = "#60a5fa";
 
 type AppState = {
@@ -43,8 +45,13 @@ type AppState = {
   investmentSnapshots: InvestmentSnapshot[];
   cardPayments: CardPayment[];
 
+  marketManual: MarketManualOverrides | null;
+
   bootstrap: () => Promise<void>;
   replaceAll: (snapshot: LocalSnapshot) => Promise<void>;
+
+  // Índices (valores manuais)
+  setMarketManual: (patch: Partial<Omit<MarketManualOverrides, "updatedAt">>) => Promise<void>;
 
   // Tags
   addTag: (input: Pick<Tag, "name" | "type" | "color" | "icon">) => Promise<Tag>;
@@ -160,6 +167,8 @@ function snapshotFromState(s: AppState): LocalSnapshot {
     recurringTemplates: s.recurringTemplates,
     investments: s.investments,
     investmentSnapshots: s.investmentSnapshots,
+
+    marketManual: s.marketManual,
   };
 }
 
@@ -177,6 +186,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   recurringTemplates: [],
   investments: [],
   investmentSnapshots: [],
+
+  marketManual: null,
 
   bootstrap: async () => {
     if (get().bootstrapped) return;
@@ -222,6 +233,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       recurringTemplates: seeded.recurringTemplates,
       investments: seeded.investments,
       investmentSnapshots: seeded.investmentSnapshots,
+
+      marketManual: seeded.marketManual ?? null,
     });
 
     await saveAllLocal(seeded);
@@ -241,8 +254,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       recurringTemplates: snapshot.recurringTemplates,
       investments: snapshot.investments,
       investmentSnapshots: snapshot.investmentSnapshots,
+
+      marketManual: snapshot.marketManual ?? null,
     });
     await saveAllLocal(snapshot);
+  },
+
+  setMarketManual: async (patch) => {
+    const now = new Date().toISOString();
+    const prev = get().marketManual;
+    const next: MarketManualOverrides = {
+      updatedAt: now,
+      ...(prev ?? {}),
+      ...patch,
+    };
+    set({ marketManual: next });
+    await saveAllLocal({ ...snapshotFromState(get()), marketManual: next });
   },
 
   addTag: async (input) => {

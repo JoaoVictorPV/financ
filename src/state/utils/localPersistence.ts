@@ -9,10 +9,13 @@ import type {
   InstallmentPlan,
   Investment,
   InvestmentSnapshot,
+  MarketSnapshot,
   RecurringTemplate,
   Tag,
   Transaction,
 } from "@/lib/domain/types";
+
+import type { MarketManualOverrides } from "@/features/market/domain/types";
 
 localforage.config({
   name: "fin-sys",
@@ -32,6 +35,10 @@ export type LocalSnapshot = {
   recurringTemplates: RecurringTemplate[];
   investments: Investment[];
   investmentSnapshots: InvestmentSnapshot[];
+  // índices (valores manuais para itens sem fonte gratuita confiável)
+  marketManual?: MarketManualOverrides | null;
+  // reservado para sync futuro (não usado no MVP)
+  marketSnapshots?: MarketSnapshot[];
 };
 
 const KEYS = {
@@ -47,6 +54,7 @@ const KEYS = {
   recurringTemplates: "recurringTemplates",
   investments: "investments",
   investmentSnapshots: "investmentSnapshots",
+  marketManual: "marketManual",
 } as const;
 
 export async function loadAllLocal(): Promise<LocalSnapshot> {
@@ -63,6 +71,7 @@ export async function loadAllLocal(): Promise<LocalSnapshot> {
     recurringTemplates,
     investments,
     investmentSnapshots,
+    marketManual,
   ] = await Promise.all([
     localforage.getItem<Tag[]>(KEYS.tags),
     localforage.getItem<IncomeSource[]>(KEYS.incomeSources),
@@ -76,6 +85,7 @@ export async function loadAllLocal(): Promise<LocalSnapshot> {
     localforage.getItem<RecurringTemplate[]>(KEYS.recurringTemplates),
     localforage.getItem<Investment[]>(KEYS.investments),
     localforage.getItem<InvestmentSnapshot[]>(KEYS.investmentSnapshots),
+    localforage.getItem<MarketManualOverrides | null>(KEYS.marketManual),
   ]);
 
   return {
@@ -91,6 +101,7 @@ export async function loadAllLocal(): Promise<LocalSnapshot> {
     recurringTemplates: recurringTemplates ?? [],
     investments: investments ?? [],
     investmentSnapshots: investmentSnapshots ?? [],
+    marketManual: marketManual ?? null,
   };
 }
 
@@ -108,5 +119,6 @@ export async function saveAllLocal(snapshot: LocalSnapshot): Promise<void> {
     localforage.setItem(KEYS.recurringTemplates, snapshot.recurringTemplates),
     localforage.setItem(KEYS.investments, snapshot.investments),
     localforage.setItem(KEYS.investmentSnapshots, snapshot.investmentSnapshots),
+    localforage.setItem(KEYS.marketManual, snapshot.marketManual ?? null),
   ]);
 }

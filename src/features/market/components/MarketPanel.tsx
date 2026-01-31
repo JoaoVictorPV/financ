@@ -47,8 +47,8 @@ export default function MarketPanel() {
 
   const items = useMemo(() => {
     const v = data?.values;
-    const goldOz = v?.gold_brl;
-    const goldG = goldOz != null ? goldOz / 31.1034768 : null; // 1 onça troy = 31.1034768g
+    const goldOz = v?.gold_brl_oz;
+    const goldG = v?.gold_brl_g ?? (goldOz != null ? goldOz / 31.1034768 : null); // 1 onça troy = 31.1034768g
     return [
       {
         label: "USD/BRL",
@@ -67,8 +67,12 @@ export default function MarketPanel() {
         value: v?.btc_brl != null ? `R$ ${formatNumber(v.btc_brl, 0)}` : "—",
       },
       {
+        label: "BTC/USD",
+        value: v?.btc_usd != null ? `US$ ${formatNumber(v.btc_usd, 0)}` : "—",
+      },
+      {
         label: "SELIC",
-        value: v?.brl_selic != null ? `${formatNumber(v.brl_selic * 100, 2)}% a.a.` : "—",
+        value: v?.brl_selic_aa != null ? `${formatNumber(v.brl_selic_aa * 100, 2)}% a.a.` : "—",
       },
       {
         label: "Ouro (BRL)",

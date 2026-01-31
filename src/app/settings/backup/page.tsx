@@ -53,6 +53,7 @@ export default function BackupSettingsPage() {
       recurringTemplates: b.recurringTemplates as LocalSnapshot["recurringTemplates"],
       investments: b.investments as LocalSnapshot["investments"],
       investmentSnapshots: b.investmentSnapshots as LocalSnapshot["investmentSnapshots"],
+      marketManual: (b.marketManual ?? null) as LocalSnapshot["marketManual"],
     };
     await replaceAll(snap);
   }
@@ -95,6 +96,7 @@ export default function BackupSettingsPage() {
     </div>
   );
 }
+
 
 
 

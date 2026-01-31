@@ -19,6 +19,7 @@ export const BackupSchemaV1 = z.object({
   recurringTemplates: z.array(z.any()),
   investments: z.array(z.any()),
   investmentSnapshots: z.array(z.any()),
+  marketManual: z.any().optional(),
 });
 
 export type BackupV1 = z.infer<typeof BackupSchemaV1>;

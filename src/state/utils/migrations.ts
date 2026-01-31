@@ -11,7 +11,14 @@ import type { CardPurchase, CreditCard, Transaction } from "@/lib/domain/types";
 export function migrateLocalSnapshot(snapshot: LocalSnapshot): LocalSnapshot {
   let next = snapshot;
   next = migrateCardTransactionsToPurchases(next);
+  next = migrateMarketManual(next);
   return next;
+}
+
+function migrateMarketManual(snapshot: LocalSnapshot): LocalSnapshot {
+  // garante presença do campo (backups antigos não têm)
+  if (typeof snapshot.marketManual !== "undefined") return snapshot;
+  return { ...snapshot, marketManual: null };
 }
 
 function migrateCardTransactionsToPurchases(snapshot: LocalSnapshot): LocalSnapshot {

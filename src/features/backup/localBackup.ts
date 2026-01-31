@@ -21,6 +21,7 @@ export function snapshotToBackup(snapshot: LocalSnapshot): BackupV1 {
     recurringTemplates: snapshot.recurringTemplates,
     investments: snapshot.investments,
     investmentSnapshots: snapshot.investmentSnapshots,
+    marketManual: snapshot.marketManual ?? null,
   };
 }
 
