@@ -1,6 +1,16 @@
 import type { MarketValues } from "./types";
 
-export type MarketGroupId = "overview" | "fx" | "brasil" | "usa" | "metals" | "energy" | "agri" | "critical" | "crypto";
+export type MarketGroupId =
+  | "overview"
+  | "fx"
+  | "brasil"
+  | "usa"
+  | "equities"
+  | "metals"
+  | "energy"
+  | "agri"
+  | "critical"
+  | "crypto";
 
 export type MarketItemId = keyof MarketValues;
 
@@ -54,6 +64,12 @@ export const MARKET_GROUPS: MarketGroup[] = [
     color: "#f59e0b",
   },
   {
+    id: "equities",
+    title: "Bolsas",
+    subtitle: "Índices das principais bolsas (termômetro de risco).",
+    color: "#f97316",
+  },
+  {
     id: "metals",
     title: "Metais (Reserva)",
     subtitle: "Ouro, prata e sinais de proteção/recessão.",
@@ -85,7 +101,146 @@ export const MARKET_GROUPS: MarketGroup[] = [
   },
 ];
 
+// Curadoria do "Resumo": leitura rápida (sem lotar a tela).
+export const OVERVIEW_IDS: Array<keyof MarketValues> = [
+  "usd_brl",
+  "brl_selic_aa",
+  "brl_ipca_12m",
+  "dxy",
+  "vix",
+  "wti_usd_bbl",
+  "xau_usd",
+  "sge_usd_oz",
+  "btc_usd",
+  "eth_usd",
+  "ibov",
+  "sp500",
+];
+
 export const MARKET_ITEMS: MarketCatalogItem[] = [
+  // Resumo (os mesmos itens também aparecem em suas categorias)
+  {
+    id: "usd_brl",
+    group: "overview",
+    label: "USD/BRL",
+    precision: 3,
+    badge: "Principal",
+    help: {
+      oQueE: "Quanto 1 dólar (USD) custa em reais (BRL).",
+      porQueImporta:
+        "Afeta importados, viagens, eletrônicos, combustível (via petróleo) e inflação. É um dos melhores termômetros rápidos do Brasil.",
+      comoLer:
+        "Se sobe, o real enfraquece. Se cai, o real fortalece. Confirme com CDS/juros para entender se é problema local ou global.",
+    },
+  },
+  {
+    id: "brl_selic_aa",
+    group: "overview",
+    label: "Selic (a.a.)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Taxa básica de juros do Brasil.",
+      porQueImporta: "Determina custo de crédito e retorno de renda fixa. Impacta o câmbio.",
+      comoLer: "Selic alta segura inflação e tende a segurar o dólar, mas pode travar a economia.",
+    },
+  },
+  {
+    id: "brl_ipca_12m",
+    group: "overview",
+    label: "IPCA 12m",
+    precision: 2,
+    badge: "Inflação",
+    help: {
+      oQueE: "Inflação oficial acumulada em 12 meses.",
+      porQueImporta: "Mostra perda de poder de compra e guia decisões de juros.",
+      comoLer: "Se sobe por vários meses, juros tendem a ficar altos por mais tempo.",
+    },
+  },
+  {
+    id: "dxy",
+    group: "overview",
+    label: "DXY",
+    precision: 2,
+    badge: "USD Global",
+    help: {
+      oQueE: "Força do dólar no mundo.",
+      porQueImporta: "Dólar forte costuma piorar emergentes. Dólar fraco costuma aliviar.",
+      comoLer: "Se DXY sobe e o Brasil sofre, é vento contra global. Se DXY está estável e USD/BRL sobe, é problema local.",
+    },
+  },
+  {
+    id: "vix",
+    group: "overview",
+    label: "VIX",
+    precision: 2,
+    badge: "Medo",
+    help: {
+      oQueE: "Volatilidade do mercado americano.",
+      porQueImporta: "VIX alto = stress, fuga do risco.",
+      comoLer: "Acima de 30 geralmente é stress. Acima de 40 é pânico.",
+    },
+  },
+  {
+    id: "wti_usd_bbl",
+    group: "overview",
+    label: "Petróleo (WTI)",
+    precision: 2,
+    badge: "Inflação",
+    help: {
+      oQueE: "Preço do barril de petróleo.",
+      porQueImporta: "Pressiona inflação e custos. Afeta transporte e logística.",
+      comoLer: "Se sobe com USD/BRL subindo, tende a pressionar combustíveis.",
+    },
+  },
+  {
+    id: "xau_usd",
+    group: "overview",
+    label: "Ouro Spot",
+    precision: 2,
+    badge: "Londres/Spot",
+    help: {
+      oQueE: "Preço do ouro internacional (spot, referência global).",
+      porQueImporta: "Reserva de valor; costuma reagir a risco e juros reais.",
+      comoLer: "Se ouro sobe com VIX subindo, é movimento defensivo.",
+    },
+  },
+  {
+    id: "sge_usd_oz",
+    group: "overview",
+    label: "Ouro Xangai",
+    precision: 2,
+    badge: "China",
+    help: {
+      oQueE: "Ouro negociado em Xangai convertido em USD/oz.",
+      porQueImporta: "Mostra demanda chinesa. Permite comparar com o spot.",
+      comoLer: "Se Xangai > Spot, há prêmio (demanda alta ou restrição local).",
+    },
+  },
+  {
+    id: "btc_usd",
+    group: "overview",
+    label: "Bitcoin",
+    precision: 0,
+    badge: "Cripto",
+    help: {
+      oQueE: "Preço do Bitcoin em USD.",
+      porQueImporta: "Termômetro de liquidez e risco. Volátil.",
+      comoLer: "Se cai com Nasdaq, é risk-off. Se sobe com dólar caindo, é risco-on.",
+    },
+  },
+  {
+    id: "sp500",
+    group: "overview",
+    label: "S&P 500",
+    precision: 0,
+    badge: "EUA",
+    help: {
+      oQueE: "Índice das 500 maiores empresas dos EUA.",
+      porQueImporta: "Principal termômetro de risco do mundo.",
+      comoLer: "Se cai e VIX sobe, é risk-off (fuga do risco).",
+    },
+  },
   // FX
   {
     id: "usd_brl",
@@ -151,6 +306,33 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       porQueImporta: "Iene é moeda de financiamento. Movimentos fortes podem sinalizar mudança de risco global.",
       comoLer: "JPY forte pode indicar aversão ao risco. JPY fraco pode indicar juros japoneses baixos e carry trade.",
       exemplos: ["JPY fortalecendo + bolsa caindo = fuga para segurança."],
+    },
+  },
+
+  {
+    id: "usd_jpy",
+    group: "fx",
+    label: "USD/JPY",
+    precision: 3,
+    help: {
+      oQueE: "Quanto 1 dólar compra em ienes.",
+      porQueImporta:
+        "O iene costuma ser moeda de 'proteção' e de financiamento. Mudanças fortes afetam mercados globais.",
+      comoLer:
+        "USD/JPY subindo = iene ficando mais fraco. USD/JPY caindo = iene fortalecendo (às vezes por aversão ao risco).",
+    },
+  },
+  {
+    id: "usd_cny",
+    group: "fx",
+    label: "USD/CNY",
+    precision: 4,
+    help: {
+      oQueE: "Quanto 1 dólar compra em yuan.",
+      porQueImporta:
+        "É um termômetro importante de política cambial chinesa. Mexe com exportações, commodities e inflação global.",
+      comoLer:
+        "USD/CNY subindo = yuan mais fraco. Se isso acontece com cobre/soja caindo, pode ser sinal de desaceleração.",
     },
   },
 
@@ -272,6 +454,68 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     },
   },
 
+  // Bolsas
+  {
+    id: "sp500",
+    group: "equities",
+    label: "S&P 500",
+    precision: 0,
+    badge: "EUA",
+    help: {
+      oQueE: "Índice das 500 maiores empresas dos EUA.",
+      porQueImporta:
+        "É o principal termômetro de risco do mundo. Quando sobe, geralmente há apetite por risco. Quando cai, o mercado está mais defensivo.",
+      comoLer:
+        "Se S&P cai junto com VIX subindo, é 'risk-off'. Se S&P sobe e DXY cai, costuma ser cenário favorável para emergentes.",
+      exemplos: [
+        "S&P caindo + juros EUA subindo → pressão em tecnologia e crescimento.",
+      ],
+    },
+  },
+  {
+    id: "nasdaq100",
+    group: "equities",
+    label: "Nasdaq 100",
+    precision: 0,
+    badge: "Tech",
+    help: {
+      oQueE: "Índice com as maiores empresas não-financeiras listadas na Nasdaq.",
+      porQueImporta:
+        "É muito sensível a juros: quando juros sobem, empresas de crescimento tendem a sofrer.",
+      comoLer:
+        "Se Nasdaq cai mais que S&P, geralmente é pressão em tecnologia por juros altos. Se sobe forte, apetite por risco e liquidez melhor.",
+    },
+  },
+  {
+    id: "dowjones",
+    group: "equities",
+    label: "Dow Jones",
+    precision: 0,
+    badge: "EUA",
+    help: {
+      oQueE: "Índice tradicional com 30 blue chips americanas.",
+      porQueImporta:
+        "Serve como termômetro de empresas maduras e industriais. Às vezes cai menos em stress que Nasdaq.",
+      comoLer:
+        "Se Dow cai menos que Nasdaq em um dia ruim, mercado está preferindo 'qualidade' e empresas consolidadas.",
+    },
+  },
+  {
+    id: "ibov",
+    group: "equities",
+    label: "Ibovespa",
+    precision: 0,
+    badge: "Brasil",
+    help: {
+      oQueE: "Principal índice da bolsa brasileira.",
+      porQueImporta:
+        "Mostra a percepção sobre Brasil. Depende muito de commodities, dólar, juros e cenário político.",
+      comoLer:
+        "Se Ibov cai e USD/BRL sobe ao mesmo tempo, normalmente é pressão local (risco Brasil).",
+      exemplos: ["Ibov subindo com dólar caindo → fluxo externo/otimismo."],
+    },
+  },
+
   // Metais
   {
     id: "xau_usd",
@@ -289,6 +533,36 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "Ouro sobe + VIX sobe = fuga para segurança.",
         "Ouro cai + VIX sobe = venda forçada (liquidez).",
       ],
+    },
+  },
+  {
+    id: "xag_usd",
+    group: "metals",
+    label: "Prata (XAG/USD)",
+    precision: 2,
+    unit: "USD/oz",
+    help: {
+      oQueE: "Preço da prata em dólar por onça.",
+      porQueImporta:
+        "A prata mistura 'reserva' com 'indústria'. Ela costuma ser mais volátil que o ouro.",
+      comoLer:
+        "Se prata cai junto com cobre e petróleo, pode ser desaceleração industrial. Se sobe junto com ouro, pode ser stress/inflacionário.",
+    },
+  },
+  {
+    id: "sge_usd_oz",
+    group: "metals",
+    label: "Ouro Xangai (SGE) em USD",
+    precision: 2,
+    unit: "USD/oz",
+    badge: "China",
+    help: {
+      oQueE:
+        "Preço do ouro negociado na Shanghai Gold Exchange convertido para USD por onça.",
+      porQueImporta:
+        "Permite comparar diretamente com o ouro internacional (Londres/spot). Diferenças mostram demanda chinesa e restrições locais.",
+      comoLer:
+        "Se o ouro em Xangai fica consistentemente acima do spot, há um 'prêmio' chinês: demanda forte ou oferta restrita.",
     },
   },
   {
@@ -342,6 +616,20 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "Se WTI em USD está estável mas em BRL sobe, o problema é o câmbio (real fraco).",
     },
   },
+  {
+    id: "natgas_usd_mmbtu",
+    group: "energy",
+    label: "Gás Natural",
+    precision: 2,
+    unit: "USD/MMBtu",
+    help: {
+      oQueE: "Preço do gás natural (EUA) por unidade térmica.",
+      porQueImporta:
+        "Gás natural impacta energia e custos industriais. Pode mexer com inflação e atividade.",
+      comoLer:
+        "Alta prolongada pressiona custo de energia. Quedas fortes podem indicar excesso de oferta ou demanda fraca.",
+    },
+  },
 
   // Críticos
   {
@@ -386,6 +674,148 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       porQueImporta: "Nuclear volta a ganhar espaço como energia estável e de baixa emissão.",
       comoLer:
         "Alta pode indicar ciclo nuclear ou demanda energética. Queda pode indicar risco/regulação.",
+    },
+  },
+
+  // Agro
+  {
+    id: "soy_usd",
+    group: "agri",
+    label: "Soja (futuro)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Contrato futuro de soja (referência internacional).",
+      porQueImporta:
+        "Soja é chave para exportação brasileira e preços de alimentos (ração).",
+      comoLer:
+        "Soja sobe com demanda chinesa e clima adverso. Quedas podem indicar safra forte ou demanda menor.",
+    },
+  },
+  {
+    id: "corn_usd",
+    group: "agri",
+    label: "Milho (futuro)",
+    precision: 2,
+    help: {
+      oQueE: "Contrato futuro de milho.",
+      porQueImporta:
+        "Milho afeta preços de carnes (ração) e energia (etanol).",
+      comoLer:
+        "Alta pode pressionar inflação de alimentos. Queda pode sinalizar safra forte.",
+    },
+  },
+  {
+    id: "wheat_usd",
+    group: "agri",
+    label: "Trigo (futuro)",
+    precision: 2,
+    help: {
+      oQueE: "Contrato futuro de trigo.",
+      porQueImporta:
+        "Trigo impacta preços de alimentos básicos e inflação global.",
+      comoLer:
+        "Sobe com tensões geopolíticas e choque de oferta (clima/guerras).",
+    },
+  },
+  {
+    id: "coffee_usd",
+    group: "agri",
+    label: "Café (futuro)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Contrato futuro de café.",
+      porQueImporta:
+        "Brasil é grande produtor. Clima e logística mexem muito nesse preço.",
+      comoLer:
+        "Alta pode antecipar repasse no café interno com algum atraso.",
+    },
+  },
+  {
+    id: "sugar_usd",
+    group: "agri",
+    label: "Açúcar (futuro)",
+    precision: 2,
+    help: {
+      oQueE: "Contrato futuro de açúcar.",
+      porQueImporta:
+        "Açúcar mexe com alimentos e com etanol (competição por cana).",
+      comoLer:
+        "Sobe com quebra de safra e demanda por bioenergia.",
+    },
+  },
+  {
+    id: "cotton_usd",
+    group: "agri",
+    label: "Algodão (futuro)",
+    precision: 2,
+    help: {
+      oQueE: "Contrato futuro de algodão.",
+      porQueImporta:
+        "Impacta a cadeia têxtil. Pode sinalizar demanda de consumo global.",
+      comoLer:
+        "Alta pode indicar demanda por vestuário e indústria; queda pode indicar desaceleração.",
+    },
+  },
+
+  // Cripto
+  {
+    id: "btc_usd",
+    group: "crypto",
+    label: "Bitcoin (USD)",
+    precision: 0,
+    badge: "BTC",
+    help: {
+      oQueE: "Preço do Bitcoin em dólar.",
+      porQueImporta:
+        "Serve como termômetro de apetite por risco e liquidez. Também é narrativa de 'reserva alternativa'.",
+      comoLer:
+        "BTC costuma subir com liquidez e risco-on. Em stress global, pode cair forte por desalavancagem.",
+      exemplos: ["BTC caindo junto com Nasdaq = risk-off."],
+    },
+  },
+  {
+    id: "eth_usd",
+    group: "crypto",
+    label: "Ethereum (USD)",
+    precision: 0,
+    badge: "ETH",
+    help: {
+      oQueE: "Preço do Ethereum em dólar.",
+      porQueImporta:
+        "Ethereum concentra grande parte das aplicações (DeFi, NFTs, L2).",
+      comoLer:
+        "Em bull markets, ETH pode performar melhor que BTC. Em queda, costuma cair mais (maior risco).",
+    },
+  },
+  {
+    id: "sol_usd",
+    group: "crypto",
+    label: "Solana (USD)",
+    precision: 0,
+    badge: "SOL",
+    help: {
+      oQueE: "Preço da Solana em dólar.",
+      porQueImporta:
+        "É uma rede com foco em alta performance. Geralmente é ainda mais volátil.",
+      comoLer:
+        "Sobe muito em momentos de euforia e cai muito em risk-off. Use como termômetro de especulação.",
+    },
+  },
+  {
+    id: "btc_dominance",
+    group: "crypto",
+    label: "Dominância do BTC",
+    precision: 2,
+    unit: "%",
+    badge: "Rotação",
+    help: {
+      oQueE: "Percentual do valor total do mercado cripto que está no Bitcoin.",
+      porQueImporta:
+        "Ajuda a entender rotação: quando dominância sobe, dinheiro busca 'segurança' no BTC; quando cai, vai para altcoins.",
+      comoLer:
+        "Dominância subindo = mercado mais defensivo. Dominância caindo = apetite por risco (altseason).",
     },
   },
 ];

@@ -224,6 +224,8 @@ export async function GET() {
 
   type CoinGeckoSimplePrice = {
     bitcoin?: { brl?: number; usd?: number };
+    ethereum?: { brl?: number; usd?: number };
+    solana?: { brl?: number; usd?: number };
     "tether-gold"?: { usd?: number; brl?: number };
     "pax-gold"?: { usd?: number; brl?: number };
   };
@@ -282,7 +284,7 @@ export async function GET() {
     limit(() => safeFetch<ErApi>("fx", "https://open.er-api.com/v6/latest/USD")),
     limit(() => safeFetch<CoinGeckoSimplePrice>(
       "crypto",
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,tether-gold,pax-gold&vs_currencies=brl,usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,tether-gold,pax-gold&vs_currencies=brl,usd",
     )),
     limit(() => safeFetch<BcbSgsRow[]>(
       "selic",
@@ -345,6 +347,13 @@ export async function GET() {
     limit(() => fetchYahooChart("^BVSP")),
   ]);
 
+  // Bolsas (Yahoo Chart) - usando mesma estratégia do VIX/IBOV
+  const [spxR, ndxR, djiR] = await Promise.all([
+    limit(() => fetchYahooChart("^GSPC")),
+    limit(() => fetchYahooChart("^NDX")),
+    limit(() => fetchYahooChart("^DJI")),
+  ]);
+
   const warnings = [
     fxR.ok ? null : fxR.error,
     cryptoR.ok ? null : cryptoR.error,
@@ -386,6 +395,9 @@ export async function GET() {
     usdjpyR.ok ? null : usdjpyR.error,
     usdcnyR.ok ? null : usdcnyR.error,
     ibovR.ok ? null : ibovR.error,
+    spxR.ok ? null : spxR.error,
+    ndxR.ok ? null : ndxR.error,
+    djiR.ok ? null : djiR.error,
   ].filter((x): x is string => Boolean(x));
 
   // se falhou algo e temos cache antigo, devolve cache para não quebrar UI
@@ -425,6 +437,10 @@ export async function GET() {
 
   const btc_brl = crypto.bitcoin?.brl;
   const btc_usd = crypto.bitcoin?.usd;
+  const eth_brl = crypto.ethereum?.brl;
+  const eth_usd = crypto.ethereum?.usd;
+  const sol_brl = crypto.solana?.brl;
+  const sol_usd = crypto.solana?.usd;
   const btc_dominance = globalR.ok ? globalR.data.data.market_cap_percentage.btc : undefined;
 
   // ouro: preferir XAUUSD via Stooq; fallback via PAXG do CoinGecko
@@ -503,7 +519,10 @@ export async function GET() {
 
   const brazil_cds_5y_bps = cdsR ?? undefined;
 
-  const ibov_index = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
+  const ibov = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
+  const sp500 = spxR.ok ? spxR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
+  const nasdaq100 = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
+  const dowjones = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
 
   const payload: MarketPayload = {
     fetchedAt: new Date().toISOString(),
@@ -517,6 +536,11 @@ export async function GET() {
       btc_brl,
       btc_usd,
       btc_dominance,
+
+      eth_brl,
+      eth_usd,
+      sol_brl,
+      sol_usd,
 
       xau_usd: xauUsdFinal,
       xag_usd,
@@ -535,6 +559,11 @@ export async function GET() {
       fed_funds,
       tips10y_real_yield,
       vix,
+
+      sp500,
+      nasdaq100,
+      dowjones,
+      ibov,
 
       brl_selic_aa,
       brl_ipca_mom,
@@ -563,6 +592,7 @@ export async function GET() {
       etf_remx_usd,
 
       sge_cny_g,
+      sge_usd_oz,
       shanghai_premium_usd_oz,
       brazil_cds_5y_bps,
     },
@@ -570,7 +600,7 @@ export async function GET() {
       updatedAt: new Date().toISOString(),
       sge_cny_g,
       brazil_cds_5y_bps,
-      ibov_index,
+      ibov_index: ibov,
     },
     source: {
       fx: "open.er-api.com",

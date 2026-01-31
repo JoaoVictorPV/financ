@@ -9,6 +9,12 @@ export type MarketValues = {
   btc_usd?: number;
   btc_dominance?: number;
 
+  // Cripto (altcoins)
+  eth_brl?: number;
+  eth_usd?: number;
+  sol_brl?: number;
+  sol_usd?: number;
+
   // Ouro/Metais
   xau_usd?: number;
   xag_usd?: number;
@@ -20,6 +26,7 @@ export type MarketValues = {
 
   // China (manual/API)
   sge_cny_g?: number;
+  sge_usd_oz?: number;
   shanghai_premium_usd_oz?: number;
 
   // Moeda global
@@ -33,6 +40,12 @@ export type MarketValues = {
   fed_funds?: number;
   vix?: number;
   tips10y_real_yield?: number;
+
+  // Bolsas / índices
+  sp500?: number;
+  nasdaq100?: number;
+  dowjones?: number;
+  ibov?: number;
 
   // Brasil
   brl_selic_aa?: number;
