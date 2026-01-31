@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import BottomSheet from "@/components/ui/BottomSheet";
-import Switch from "@/components/ui/Switch";
 import type { MarketPayload } from "@/features/market/domain/types";
 
 function formatNumber(n: number, digits = 2) {
@@ -16,14 +15,30 @@ function formatNumber(n: number, digits = 2) {
 
 export default function MarketPanel() {
   const [data, setData] = useState<MarketPayload | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [openMap, setOpenMap] = useState<Record<string, boolean>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  // carrega cache local instantaneamente para não ficar "vazio" enquanto a API busca dados
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("finSys.market.cache");
+      if (raw) {
+        const json = JSON.parse(raw) as MarketPayload;
+        setData(json);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
 
   async function load() {
     try {
-      setError(null);
+      // não limpa UI inteira; só mostra loading no botão
       setLoading(true);
       const res = await fetch("/api/market", { cache: "no-store" });
       if (!res.ok) {
@@ -32,12 +47,19 @@ export default function MarketPanel() {
       }
       const json = (await res.json()) as MarketPayload;
       setData(json);
-      if (json.meta?.note) {
-        setError(json.meta.note);
+
+      try {
+        localStorage.setItem("finSys.market.cache", JSON.stringify(json));
+      } catch {
+        // ignore
       }
+
+      // Evita flood de mensagens. Mostra apenas aviso curto e não em vermelho (a UI trata)
+      setError(json.meta?.stale ? (json.meta?.note ?? "Dados em cache") : null);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Falha ao carregar índices";
-      setError(msg);
+      // se já temos algo carregado, não exibe erro agressivo.
+      if (!data) setError(msg);
     } finally {
       setLoading(false);
     }
@@ -87,10 +109,6 @@ export default function MarketPanel() {
       },
     ];
   }, [data]);
-
-  function setToggle(key: string, next: boolean) {
-    setOpenMap((prev) => ({ ...prev, [key]: next }));
-  }
 
   const groups = useMemo(() => {
     const v = data?.values;
@@ -403,6 +421,8 @@ export default function MarketPanel() {
     return { level: "Baixo", note: "Condições relativamente estáveis, sem alarmes fortes." } as const;
   }, [data]);
 
+  const showSkeleton = hydrated && !data;
+
   return (
     <Card className="space-y-3">
       <div className="flex items-center justify-between">
@@ -419,15 +439,26 @@ export default function MarketPanel() {
         </div>
       </div>
 
-      {error ? <div className="text-sm text-[var(--danger)]">{error}</div> : null}
+      {error ? (
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
+          {error}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-2">
-        {items.map((it) => (
-          <div key={it.label} className="rounded-xl border border-white/10 bg-black/10 p-3">
-            <div className="text-xs text-[var(--muted)]">{it.label}</div>
-            <div className="mt-1 text-sm font-bold">{it.value}</div>
-          </div>
-        ))}
+        {showSkeleton
+          ? Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="h-3 w-20 rounded bg-white/10" />
+              <div className="mt-2 h-4 w-24 rounded bg-white/10" />
+            </div>
+          ))
+          : items.map((it) => (
+            <div key={it.label} className="rounded-xl border border-white/10 bg-black/10 p-3">
+              <div className="text-xs text-[var(--muted)]">{it.label}</div>
+              <div className="mt-1 text-sm font-bold">{it.value}</div>
+            </div>
+          ))}
       </div>
 
       <Button variant="secondary" onClick={() => setOpen(true)}>
@@ -448,26 +479,33 @@ export default function MarketPanel() {
             <div key={g.id} className="space-y-2">
               <div className="text-sm font-semibold">{g.title}</div>
               <div className="space-y-2">
-                {g.items.map((it) => (
-                  <div key={it.id} className="rounded-xl border border-white/10 bg-black/10 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold">{it.label}</div>
-                        <div className="text-xs text-[var(--muted)]">{it.value}</div>
+                {g.items.map((it) => {
+                  const expanded = expandedId === it.id;
+                  return (
+                    <button
+                      key={it.id}
+                      type="button"
+                      onClick={() => setExpandedId(expanded ? null : it.id)}
+                      className="w-full rounded-2xl border border-white/10 bg-black/10 p-3 text-left"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold">{it.label}</div>
+                          <div className="text-xs text-[var(--muted)]">{it.value}</div>
+                        </div>
+                        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs">
+                          {expanded ? "Fechar" : "Detalhes"}
+                        </div>
                       </div>
-                      <div className="min-w-[88px]">
-                        <Switch
-                          checked={!!openMap[it.id]}
-                          onChange={(next) => setToggle(it.id, next)}
-                          label="Detalhe"
-                        />
-                      </div>
-                    </div>
-                    {openMap[it.id] ? (
-                      <div className="mt-2 text-xs text-[var(--muted)]">{it.help}</div>
-                    ) : null}
-                  </div>
-                ))}
+
+                      {expanded ? (
+                        <div className="mt-3 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-[var(--muted)]">
+                          {it.help}
+                        </div>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}

@@ -8,6 +8,34 @@ let CACHE: MarketPayload | null = null;
 let CACHE_AT = 0;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
 
+function createLimiter(max: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+
+  function next() {
+    if (active >= max) return;
+    const fn = queue.shift();
+    if (!fn) return;
+    fn();
+  }
+
+  return function limit<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const run = () => {
+        active++;
+        task()
+          .then(resolve, reject)
+          .finally(() => {
+            active--;
+            next();
+          });
+      };
+      if (active < max) run();
+      else queue.push(run);
+    });
+  };
+}
+
 function parseStooqCsvRow(csv: string): {
   symbol: string;
   date: string;
@@ -139,15 +167,7 @@ async function safeFetch<T>(label: string, url: string): Promise<{ ok: true; dat
   }
 }
 
-function parseStooqClose(text?: string): number | undefined {
-  if (!text) return undefined;
-  return parseStooqCsvRow(text)?.close ?? undefined;
-}
-
-function computeChangePct(open?: number | null, close?: number | null): number | undefined {
-  if (open == null || close == null || open === 0) return undefined;
-  return (close - open) / open;
-}
+// helpers reservados para futuros agregados
 
 async function fetchSgeAu9999CnyG(): Promise<number | undefined> {
   const endpoints = [
@@ -211,6 +231,10 @@ export async function GET() {
 
   type ErApi = { rates: Record<string, number>; time_last_update_unix?: number };
 
+  // Limita concorrência para evitar "fetch failed" por excesso de conexões simultâneas
+  // (principalmente em ambiente serverless)
+  const limit = createLimiter(6);
+
   const [
     fxR,
     cryptoR,
@@ -255,70 +279,70 @@ export async function GET() {
     cdsR,
     ibovR,
   ] = await Promise.all([
-    safeFetch<ErApi>("fx", "https://open.er-api.com/v6/latest/USD"),
-    safeFetch<CoinGeckoSimplePrice>(
+    limit(() => safeFetch<ErApi>("fx", "https://open.er-api.com/v6/latest/USD")),
+    limit(() => safeFetch<CoinGeckoSimplePrice>(
       "crypto",
       "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,tether-gold,pax-gold&vs_currencies=brl,usd",
-    ),
-    safeFetch<BcbSgsRow[]>(
+    )),
+    limit(() => safeFetch<BcbSgsRow[]>(
       "selic",
       "https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/10?formato=json",
-    ),
-    safeFetch<BcbSgsRow[]>(
+    )),
+    limit(() => safeFetch<BcbSgsRow[]>(
       "ipca",
       "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/24?formato=json",
-    ),
-    safeFetchText("t10y2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y"),
-    safeFetchText("m2", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WM2NS"),
-    safeFetchText("dxy", "https://stooq.com/q/l/?s=dx.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("xau", "https://stooq.com/q/l/?s=xauusd&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("xag", "https://stooq.com/q/l/?s=xagusd&f=sd2t2ohlcv&h&e=csv"),
-    safeFetch<{ data: { market_cap_percentage: Record<string, number> } }>(
+    )),
+    limit(() => safeFetchText("t10y2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y")),
+    limit(() => safeFetchText("m2", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WM2NS")),
+    limit(() => safeFetchText("dxy", "https://stooq.com/q/l/?s=dx.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("xau", "https://stooq.com/q/l/?s=xauusd&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("xag", "https://stooq.com/q/l/?s=xagusd&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetch<{ data: { market_cap_percentage: Record<string, number> } }>(
       "global",
       "https://api.coingecko.com/api/v3/global",
-    ),
+    )),
 
     // FRED (juros EUA)
-    safeFetchText("us2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2"),
-    safeFetchText("us10y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"),
-    safeFetchText("fedfunds", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR"),
-    safeFetchText("tips10y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFII10"),
+    limit(() => safeFetchText("us2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2")),
+    limit(() => safeFetchText("us10y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10")),
+    limit(() => safeFetchText("fedfunds", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=EFFR")),
+    limit(() => safeFetchText("tips10y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DFII10")),
 
     // VIX (Yahoo)
-    fetchYahooChart("^VIX"),
+    limit(() => fetchYahooChart("^VIX")),
 
     // Commodities / futuros (Stooq)
-    safeFetchText("wti", "https://stooq.com/q/l/?s=cl.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("natgas", "https://stooq.com/q/l/?s=ng.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("copper", "https://stooq.com/q/l/?s=hg.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("wheat", "https://stooq.com/q/l/?s=zw.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("corn", "https://stooq.com/q/l/?s=zc.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("soy", "https://stooq.com/q/l/?s=zs.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("sugar", "https://stooq.com/q/l/?s=sb.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("coffee", "https://stooq.com/q/l/?s=kc.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("cotton", "https://stooq.com/q/l/?s=ct.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("platinum", "https://stooq.com/q/l/?s=pl.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("palladium", "https://stooq.com/q/l/?s=pa.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("gasoline", "https://stooq.com/q/l/?s=rb.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("heating_oil", "https://stooq.com/q/l/?s=ho.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("aluminum", "https://stooq.com/q/l/?s=al.f&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("nickel", "https://stooq.com/q/l/?s=ni.f&f=sd2t2ohlcv&h&e=csv"),
+    limit(() => safeFetchText("wti", "https://stooq.com/q/l/?s=cl.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("natgas", "https://stooq.com/q/l/?s=ng.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("copper", "https://stooq.com/q/l/?s=hg.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("wheat", "https://stooq.com/q/l/?s=zw.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("corn", "https://stooq.com/q/l/?s=zc.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("soy", "https://stooq.com/q/l/?s=zs.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("sugar", "https://stooq.com/q/l/?s=sb.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("coffee", "https://stooq.com/q/l/?s=kc.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("cotton", "https://stooq.com/q/l/?s=ct.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("platinum", "https://stooq.com/q/l/?s=pl.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("palladium", "https://stooq.com/q/l/?s=pa.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("gasoline", "https://stooq.com/q/l/?s=rb.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("heating_oil", "https://stooq.com/q/l/?s=ho.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("aluminum", "https://stooq.com/q/l/?s=al.f&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("nickel", "https://stooq.com/q/l/?s=ni.f&f=sd2t2ohlcv&h&e=csv")),
 
     // ETFs proxy (elementos críticos)
-    safeFetchText("remx", "https://stooq.com/q/l/?s=remx.us&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("lit", "https://stooq.com/q/l/?s=lit.us&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("ura", "https://stooq.com/q/l/?s=ura.us&f=sd2t2ohlcv&h&e=csv"),
+    limit(() => safeFetchText("remx", "https://stooq.com/q/l/?s=remx.us&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("lit", "https://stooq.com/q/l/?s=lit.us&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("ura", "https://stooq.com/q/l/?s=ura.us&f=sd2t2ohlcv&h&e=csv")),
 
     // FX via Stooq (para históricos/gráficos e redundância)
-    safeFetchText("usdbrl", "https://stooq.com/q/l/?s=usdbrl&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("eurbrl", "https://stooq.com/q/l/?s=eurbrl&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("cnybrl", "https://stooq.com/q/l/?s=cnybrl&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("jpybrl", "https://stooq.com/q/l/?s=jpybrl&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("usdjpy", "https://stooq.com/q/l/?s=usdjpy&f=sd2t2ohlcv&h&e=csv"),
-    safeFetchText("usdcny", "https://stooq.com/q/l/?s=usdcny&f=sd2t2ohlcv&h&e=csv"),
-    fetchSgeAu9999CnyG(),
-    fetchBrazilCdsBps(),
-    fetchYahooChart("^BVSP"),
+    limit(() => safeFetchText("usdbrl", "https://stooq.com/q/l/?s=usdbrl&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("eurbrl", "https://stooq.com/q/l/?s=eurbrl&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("cnybrl", "https://stooq.com/q/l/?s=cnybrl&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("jpybrl", "https://stooq.com/q/l/?s=jpybrl&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("usdjpy", "https://stooq.com/q/l/?s=usdjpy&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => safeFetchText("usdcny", "https://stooq.com/q/l/?s=usdcny&f=sd2t2ohlcv&h&e=csv")),
+    limit(() => fetchSgeAu9999CnyG()),
+    limit(() => fetchBrazilCdsBps()),
+    limit(() => fetchYahooChart("^BVSP")),
   ]);
 
   const warnings = [
@@ -370,7 +394,8 @@ export async function GET() {
       ...CACHE,
       meta: {
         stale: true,
-        note: `Usando cache (falha externa): ${warnings.join(" | ")}`,
+        note: "Usando cache (falha externa temporária em algumas fontes).",
+        errors: warnings,
       },
     };
     return NextResponse.json(payload);
@@ -469,6 +494,13 @@ export async function GET() {
 
   const sge_cny_g = sgeR ?? undefined;
 
+  const sge_usd_oz =
+    sge_cny_g != null && usd_cny_fx != null
+      ? (sge_cny_g / usd_cny_fx) * 31.1034768
+      : undefined;
+  const shanghai_premium_usd_oz =
+    sge_usd_oz != null && xauUsdFinal != null ? sge_usd_oz - xauUsdFinal : undefined;
+
   const brazil_cds_5y_bps = cdsR ?? undefined;
 
   const ibov_index = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
@@ -531,6 +563,7 @@ export async function GET() {
       etf_remx_usd,
 
       sge_cny_g,
+      shanghai_premium_usd_oz,
       brazil_cds_5y_bps,
     },
     manual: {
@@ -546,7 +579,7 @@ export async function GET() {
       fred: "fredgraph.csv",
       stooq: "stooq csv",
     },
-    meta: warnings.length ? { stale: false, note: warnings.join(" | "), errors: warnings } : { stale: false },
+    meta: warnings.length ? { stale: false, note: "Alguns índices estão temporariamente indisponíveis.", errors: warnings } : { stale: false },
   };
 
   CACHE = payload;
