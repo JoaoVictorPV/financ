@@ -5,7 +5,7 @@ import Card from "@/components/ui/Card";
 import Chip from "@/components/ui/Chip";
 import Input from "@/components/ui/Input";
 import type { MarketPayload } from "@/features/market/domain/types";
-import { MARKET_GROUPS, MARKET_ITEMS, type MarketGroupId } from "@/features/market/domain/catalog";
+import { MARKET_GROUPS, MARKET_ITEMS, OVERVIEW_IDS, type MarketGroupId } from "@/features/market/domain/catalog";
 import { formatValue } from "@/features/market/domain/format";
 
 function HelpBlock({ title, text }: { title: string; text: string }) {
@@ -33,11 +33,29 @@ export default function MarketCatalogExplorer({
   const values = data?.values;
 
   const groupItems = useMemo(() => {
-    const byGroup = MARKET_ITEMS.filter((it) => it.group === group);
     const q = query.trim().toLowerCase();
+
+    // Busca global: quando o usuário digita, procuramos em TODOS os itens.
+    // Se não tiver busca, mostramos o grupo selecionado (com comportamento especial para Resumo).
+    const base = q
+      ? MARKET_ITEMS
+      : group === "overview"
+        ? MARKET_ITEMS.filter((it) => OVERVIEW_IDS.includes(it.id))
+        : MARKET_ITEMS.filter((it) => it.group === group);
+
     const filtered = q
-      ? byGroup.filter((it) => it.label.toLowerCase().includes(q) || (it.badge ?? "").toLowerCase().includes(q))
-      : byGroup;
+      ? base
+          .filter((it) => {
+            const hay = `${it.label} ${it.badge ?? ""} ${it.id}`.toLowerCase();
+            return hay.includes(q);
+          })
+          // ranking simples: prioriza match no começo do label
+          .sort((a, b) => {
+            const aStarts = a.label.toLowerCase().startsWith(q) ? 1 : 0;
+            const bStarts = b.label.toLowerCase().startsWith(q) ? 1 : 0;
+            return bStarts - aStarts;
+          })
+      : base;
 
     if (!values) return filtered;
     return [...filtered].sort((a, b) => {

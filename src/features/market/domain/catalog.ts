@@ -115,6 +115,7 @@ export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "brl_ipca_12m",
   "sp500_change_pct",
   "ibov_change_pct",
+  "dowjones_change_pct",
 ];
 
 export const MARKET_ITEMS: MarketCatalogItem[] = [
@@ -578,6 +579,21 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "A prata mistura 'reserva' com 'indústria'. Ela costuma ser mais volátil que o ouro.",
       comoLer:
         "Se prata cai junto com cobre e petróleo, pode ser desaceleração industrial. Se sobe junto com ouro, pode ser stress/inflacionário.",
+    },
+  },
+
+  {
+    id: "copper_usd",
+    group: "metals",
+    label: "Cobre (futuro)",
+    precision: 2,
+    badge: "Indústria",
+    help: {
+      oQueE: "Preço do cobre (referência internacional).",
+      porQueImporta:
+        "Cobre é um termômetro de atividade industrial global (construção, eletrônica, energia).",
+      comoLer:
+        "Subindo por meses pode sugerir demanda forte. Caindo forte pode indicar desaceleração industrial.",
     },
   },
 
