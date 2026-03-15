@@ -7,10 +7,10 @@ const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
 let CACHE: Record<string, MarketHistoryPayload> = {};
 let CACHE_AT: Record<string, number> = {};
 
-type RangeKey = "3mo" | "6mo" | "1y" | "5y";
+type RangeKey = "3mo" | "6mo" | "1y" | "5y" | "10y" | "max";
 
 function normalizeRange(raw: string | null): RangeKey {
-  if (raw === "3mo" || raw === "6mo" || raw === "1y" || raw === "5y") return raw;
+  if (raw === "3mo" || raw === "6mo" || raw === "1y" || raw === "5y" || raw === "10y" || raw === "max") return raw;
   return "6mo";
 }
 

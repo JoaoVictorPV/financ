@@ -29,6 +29,7 @@ export default function MarketCatalogExplorer({
   const [group, setGroup] = useState<MarketGroupId>(defaultGroup);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const isSearching = query.trim().length > 0;
 
   const values = data?.values;
 
@@ -72,14 +73,16 @@ export default function MarketCatalogExplorer({
       <Card className="space-y-3">
         <div>
           <div className="text-base font-semibold">{title}</div>
-          <div className="mt-1 text-xs text-[var(--muted)]">{currentGroup?.subtitle}</div>
+          <div className="mt-1 text-xs text-[var(--muted)]">
+            {isSearching ? "Resultados da busca (todas as categorias)" : currentGroup?.subtitle}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
           {MARKET_GROUPS.map((g) => (
             <Chip
               key={g.id}
-              active={group === g.id}
+              active={!isSearching && group === g.id}
               color={g.color}
               onClick={() => {
                 setGroup(g.id);

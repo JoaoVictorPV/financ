@@ -20,7 +20,7 @@ export default function MarketChartsView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [range, setRange] = useState<"3mo" | "6mo" | "1y" | "5y">("6mo");
+  const [range, setRange] = useState<"3mo" | "6mo" | "1y" | "5y" | "10y" | "max">("6mo");
   const [query, setQuery] = useState("");
 
   async function load() {
@@ -122,6 +122,8 @@ export default function MarketChartsView() {
             { id: "6mo", label: "6m" },
             { id: "1y", label: "1a" },
             { id: "5y", label: "5a" },
+            { id: "10y", label: "10a" },
+            { id: "max", label: "Tudo" },
           ] as const).map((r) => (
             <Chip key={r.id} active={range === r.id} onClick={() => setRange(r.id)}>
               {r.label}
