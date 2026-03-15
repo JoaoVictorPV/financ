@@ -2,6 +2,12 @@
 
 # dependencies
 /node_modules
+.env.local
+.env
+
+# artefatos temporários de debug
+te_brazil.json
+te_brazil_headers.txt
 /.pnp
 .pnp.*
 .yarn/*
