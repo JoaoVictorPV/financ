@@ -19,12 +19,14 @@ export default function MarketChartsView() {
   const [data, setData] = useState<MarketHistoryPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [range, setRange] = useState<"3mo" | "6mo" | "1y" | "5y">("6mo");
   const [query, setQuery] = useState("");
 
   async function load() {
     try {
       setError(null);
+      setNote(null);
       setLoading(true);
       const res = await fetch(`/api/market/history?range=${range}`, { cache: "no-store" });
       if (!res.ok) {
@@ -33,7 +35,8 @@ export default function MarketChartsView() {
       }
       const json = (await res.json()) as MarketHistoryPayload;
       setData(json);
-      if (json.meta?.note) setError(json.meta.note);
+      // Se existir aviso parcial, mostra como nota (não como erro em vermelho)
+      if (json.meta?.note && (json.meta.errors?.length ?? 0) > 0) setNote(json.meta.note);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Falha ao carregar gráficos";
       setError(msg);
@@ -134,6 +137,11 @@ export default function MarketChartsView() {
           />
         </div>
         {error ? <div className="text-xs text-[var(--danger)]">{error}</div> : null}
+        {note ? (
+          <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-[var(--muted)]">
+            {note}
+          </div>
+        ) : null}
       </Card>
 
       <div className="space-y-4">

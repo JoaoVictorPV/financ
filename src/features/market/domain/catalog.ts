@@ -418,24 +418,6 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     },
   },
   {
-    id: "t10y2y",
-    group: "usa",
-    label: "Curva EUA (10Y-2Y)",
-    precision: 2,
-    unit: "p.p.",
-    badge: "Recessão",
-    help: {
-      oQueE: "Diferença entre juros de 10 anos e 2 anos nos EUA.",
-      porQueImporta: "Quando fica negativa, historicamente antecipa recessões.",
-      comoLer:
-        "Se a curva inverte (negativa), o mercado espera que juros caiam no futuro por desaceleração.",
-      thresholds: [
-        { when: "< 0", meaning: "Curva invertida (alerta)" },
-        { when: "> 1", meaning: "Curva normal e otimista" },
-      ],
-    },
-  },
-  {
     id: "vix",
     group: "usa",
     label: "VIX (Medo)",
@@ -596,39 +578,6 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "A prata mistura 'reserva' com 'indústria'. Ela costuma ser mais volátil que o ouro.",
       comoLer:
         "Se prata cai junto com cobre e petróleo, pode ser desaceleração industrial. Se sobe junto com ouro, pode ser stress/inflacionário.",
-    },
-  },
-  {
-    id: "sge_usd_oz",
-    group: "metals",
-    label: "Ouro Xangai (SGE) em USD",
-    precision: 2,
-    unit: "USD/oz",
-    badge: "China",
-    help: {
-      oQueE:
-        "Preço do ouro negociado na Shanghai Gold Exchange convertido para USD por onça.",
-      porQueImporta:
-        "Permite comparar diretamente com o ouro internacional (Londres/spot). Diferenças mostram demanda chinesa e restrições locais.",
-      comoLer:
-        "Se o ouro em Xangai fica consistentemente acima do spot, há um 'prêmio' chinês: demanda forte ou oferta restrita.",
-    },
-  },
-  {
-    id: "shanghai_premium_usd_oz",
-    group: "metals",
-    label: "Premium Xangai (Ouro)",
-    precision: 2,
-    unit: "USD/oz",
-    badge: "China",
-    help: {
-      oQueE:
-        "Diferença entre o ouro na China (SGE) e o ouro spot internacional (XAU/USD).",
-      porQueImporta:
-        "Mostra demanda local chinesa e restrições/fluxos. Premium alto = China pagando mais por ouro.",
-      comoLer:
-        "Premium positivo e crescente pode indicar demanda forte, tensão financeira ou restrição de oferta local.",
-      exemplos: ["Premium subindo com dólar forte = demanda chinesa resiliente."],
     },
   },
 
