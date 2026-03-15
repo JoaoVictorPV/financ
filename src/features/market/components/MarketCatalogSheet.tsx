@@ -6,7 +6,7 @@ import Card from "@/components/ui/Card";
 import Chip from "@/components/ui/Chip";
 import Input from "@/components/ui/Input";
 import type { MarketPayload } from "@/features/market/domain/types";
-import { MARKET_GROUPS, MARKET_ITEMS, type MarketGroupId } from "@/features/market/domain/catalog";
+import { MARKET_GROUPS, MARKET_ITEMS, OVERVIEW_IDS, type MarketGroupId } from "@/features/market/domain/catalog";
 import { formatValue } from "@/features/market/domain/format";
 
 function HelpBlock({ title, text }: { title: string; text: string }) {
@@ -33,12 +33,44 @@ export default function MarketCatalogSheet({
 
   const values = data?.values;
 
+  function pickUnique(items: typeof MARKET_ITEMS): typeof MARKET_ITEMS {
+    const map = new Map<string, (typeof MARKET_ITEMS)[number]>();
+    for (const it of items) {
+      const existing = map.get(it.id);
+      if (!existing) {
+        map.set(it.id, it);
+        continue;
+      }
+      if (existing.group !== "overview" && it.group === "overview") {
+        map.set(it.id, it);
+      }
+    }
+    return Array.from(map.values());
+  }
+
   const groupItems = useMemo(() => {
-    const byGroup = MARKET_ITEMS.filter((it) => it.group === group);
     const q = query.trim().toLowerCase();
+
+    if (!q && group === "overview") {
+      const byId = new Map<string, (typeof MARKET_ITEMS)[number]>();
+      for (const it of MARKET_ITEMS) {
+        const existing = byId.get(it.id);
+        if (!existing) byId.set(it.id, it);
+        else if (existing.group !== "overview" && it.group === "overview") byId.set(it.id, it);
+      }
+      const ordered = OVERVIEW_IDS.map((id) => byId.get(id)).filter((x): x is (typeof MARKET_ITEMS)[number] => Boolean(x));
+      return values
+        ? [...ordered].sort((a, b) => Number(typeof values[b.id] === "number") - Number(typeof values[a.id] === "number"))
+        : ordered;
+    }
+
+    const base = q ? pickUnique(MARKET_ITEMS) : MARKET_ITEMS.filter((it) => it.group === group);
     const filtered = q
-      ? byGroup.filter((it) => it.label.toLowerCase().includes(q) || (it.badge ?? "").toLowerCase().includes(q))
-      : byGroup;
+      ? base.filter((it) => {
+          const hay = `${it.label} ${it.badge ?? ""} ${it.id}`.toLowerCase();
+          return hay.includes(q);
+        })
+      : base;
 
     // mostra primeiro os que já têm valor (melhora percepção)
     if (!values) return filtered;

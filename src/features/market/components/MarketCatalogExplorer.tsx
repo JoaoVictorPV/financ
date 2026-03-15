@@ -33,16 +33,46 @@ export default function MarketCatalogExplorer({
 
   const values = data?.values;
 
+  function pickUnique(items: typeof MARKET_ITEMS): typeof MARKET_ITEMS {
+    // Deduplica por id (existem itens duplicados no catálogo: um em overview e outro na categoria real)
+    // Regra: se houver versão `overview`, ela tem prioridade.
+    const map = new Map<string, (typeof MARKET_ITEMS)[number]>();
+    for (const it of items) {
+      const existing = map.get(it.id);
+      if (!existing) {
+        map.set(it.id, it);
+        continue;
+      }
+      // prioridade p/ overview
+      if (existing.group !== "overview" && it.group === "overview") {
+        map.set(it.id, it);
+      }
+    }
+    return Array.from(map.values());
+  }
+
   const groupItems = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     // Busca global: quando o usuário digita, procuramos em TODOS os itens.
     // Se não tiver busca, mostramos o grupo selecionado (com comportamento especial para Resumo).
+    if (!q && group === "overview") {
+      // Resumo: monta lista fixa e ordenada, 1 item por id
+      const byId = new Map<string, (typeof MARKET_ITEMS)[number]>();
+      for (const it of MARKET_ITEMS) {
+        const existing = byId.get(it.id);
+        if (!existing) byId.set(it.id, it);
+        else if (existing.group !== "overview" && it.group === "overview") byId.set(it.id, it);
+      }
+      const ordered = OVERVIEW_IDS.map((id) => byId.get(id)).filter((x): x is (typeof MARKET_ITEMS)[number] => Boolean(x));
+      return values
+        ? [...ordered].sort((a, b) => Number(typeof values[b.id] === "number") - Number(typeof values[a.id] === "number"))
+        : ordered;
+    }
+
     const base = q
-      ? MARKET_ITEMS
-      : group === "overview"
-        ? MARKET_ITEMS.filter((it) => OVERVIEW_IDS.includes(it.id))
-        : MARKET_ITEMS.filter((it) => it.group === group);
+      ? pickUnique(MARKET_ITEMS)
+      : MARKET_ITEMS.filter((it) => it.group === group);
 
     const filtered = q
       ? base
