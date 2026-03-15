@@ -89,7 +89,7 @@ export async function GET(request: Request) {
     { id: "ftse", label: "FTSE 100", unit: "pts", symbol: "^FTSE" },
     { id: "stoxx", label: "Euro Stoxx 50", unit: "pts", symbol: "^STOXX50E" },
     { id: "shanghai", label: "Shanghai Composite", unit: "pts", symbol: "000001.SS" },
-    { id: "ifix", label: "IFIX (FIIs)", unit: "pts", symbol: "IFIX.SA" },
+    // IFIX: removido a pedido (gráfico instável)
 
     // ETFs / proxies
     { id: "remx", label: "Terras Raras (REMX)", unit: "USD", symbol: "REMX" },
