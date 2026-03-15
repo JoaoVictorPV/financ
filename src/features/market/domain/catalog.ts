@@ -111,6 +111,7 @@ export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "xau_usd",
   "xag_usd",
   "wti_usd_bbl",
+  "soy_usd",
   "eth_usd",
   "brl_ipca_12m",
   "sp500_change_pct",
@@ -418,6 +419,21 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       ],
     },
   },
+
+  {
+    id: "fed_funds",
+    group: "usa",
+    label: "Fed Funds Rate",
+    precision: 2,
+    badge: "Juros EUA",
+    help: {
+      oQueE: "Taxa efetiva de juros de curto prazo dos EUA (referência do Fed).",
+      porQueImporta:
+        "É a taxa-base global. Quando sobe, a liquidez aperta e ativos de risco tendem a sofrer (ações/cripto).",
+      comoLer:
+        "Fed Funds alta por mais tempo costuma pressionar dólar e juros longos; cortes tendem a aliviar condições financeiras.",
+    },
+  },
   {
     id: "vix",
     group: "usa",
@@ -644,6 +660,485 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     help: {
       oQueE: "Variação percentual do Shanghai Composite no dia.",
       porQueImporta: "Leitura rápida do humor do mercado chinês.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "ifix",
+    group: "equities",
+    label: "IFIX (Fundos Imobiliários)",
+    precision: 0,
+    badge: "Brasil",
+    help: {
+      oQueE: "Índice que acompanha o desempenho médio dos fundos imobiliários listados na B3.",
+      porQueImporta: "Ajuda a ver o humor do mercado de FIIs e a sensibilidade a juros no Brasil.",
+      comoLer:
+        "Se juros sobem, FIIs podem sofrer. Se juros caem (ou expectativa de queda), FIIs tendem a melhorar.",
+    },
+  },
+  {
+    id: "ifix_change_pct",
+    group: "equities",
+    label: "IFIX (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do IFIX no dia.",
+      porQueImporta: "Leitura rápida do humor dos FIIs.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "bdry_usd",
+    group: "equities",
+    label: "Frete Marítimo (BDI proxy)",
+    precision: 2,
+    badge: "Proxy",
+    help: {
+      oQueE: "Proxy do Baltic Dry Index via ETF (BDRY).",
+      porQueImporta:
+        "Frete marítimo é um termômetro de comércio global e demanda por commodities. Pode antecipar movimentos de ciclo econômico.",
+      comoLer:
+        "Subida prolongada sugere demanda/logística mais forte. Queda prolongada pode sinalizar desaceleração.",
+    },
+  },
+  {
+    id: "bdry_change_pct",
+    group: "equities",
+    label: "Frete Marítimo (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do proxy de frete (BDRY).",
+      porQueImporta: "Leitura rápida do dia no setor de fretes.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  // Ações / FIIs (valores habituais via Yahoo)
+  {
+    id: "aapl_usd",
+    group: "equities",
+    label: "Apple (AAPL)",
+    precision: 2,
+    badge: "EUA",
+    help: {
+      oQueE: "Cotação da ação Apple.",
+      porQueImporta: "Gigante global; influencia índices e sentimento de tecnologia.",
+      comoLer: "Use junto de Nasdaq/S&P e juros EUA para entender o pano de fundo.",
+    },
+  },
+  {
+    id: "aapl_change_pct",
+    group: "equities",
+    label: "Apple (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da Apple.",
+      porQueImporta: "Leitura rápida do dia em big tech.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "nvda_usd",
+    group: "equities",
+    label: "Nvidia (NVDA)",
+    precision: 2,
+    badge: "EUA",
+    help: {
+      oQueE: "Cotação da ação Nvidia.",
+      porQueImporta: "Referência em chips/IA; costuma ter alta volatilidade.",
+      comoLer: "Sensível a ciclo de tecnologia e juros.",
+    },
+  },
+  {
+    id: "nvda_change_pct",
+    group: "equities",
+    label: "Nvidia (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da Nvidia.",
+      porQueImporta: "Leitura rápida do dia em semicondutores/IA.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "asml_usd",
+    group: "equities",
+    label: "ASML",
+    precision: 2,
+    badge: "Europa",
+    help: {
+      oQueE: "Cotação da ação ASML.",
+      porQueImporta: "Empresa crítica na cadeia de chips (litografia).",
+      comoLer: "Pode antecipar tendências do ciclo de semicondutores.",
+    },
+  },
+  {
+    id: "asml_change_pct",
+    group: "equities",
+    label: "ASML (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da ASML.",
+      porQueImporta: "Leitura rápida do dia na cadeia de semicondutores.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "meli_usd",
+    group: "equities",
+    label: "Mercado Livre (MELI)",
+    precision: 2,
+    badge: "LatAm",
+    help: {
+      oQueE: "Cotação da ação Mercado Livre.",
+      porQueImporta: "Proxy de consumo/digitalização na América Latina.",
+      comoLer: "Sensível a juros e ciclo econômico.",
+    },
+  },
+  {
+    id: "meli_change_pct",
+    group: "equities",
+    label: "MELI (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do Mercado Livre.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "pltr_usd",
+    group: "equities",
+    label: "Palantir (PLTR)",
+    precision: 2,
+    badge: "EUA",
+    help: {
+      oQueE: "Cotação da ação Palantir.",
+      porQueImporta: "Exposição a software/dados e contratos corporativos/governo.",
+      comoLer: "Tende a ser mais volátil; use com cautela.",
+    },
+  },
+  {
+    id: "pltr_change_pct",
+    group: "equities",
+    label: "PLTR (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da Palantir.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "hdb_usd",
+    group: "equities",
+    label: "HDFC Bank (HDB)",
+    precision: 2,
+    badge: "Índia",
+    help: {
+      oQueE: "Cotação do HDFC Bank.",
+      porQueImporta: "Exposição a crescimento e crédito na Índia.",
+      comoLer: "Pode ser afetado por juros, câmbio e ciclo local.",
+    },
+  },
+  {
+    id: "hdb_change_pct",
+    group: "equities",
+    label: "HDB (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do HDFC Bank.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "vale3_brl",
+    group: "equities",
+    label: "Vale (VALE3)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação VALE3.",
+      porQueImporta: "Muito ligada a minério e China; impacta o Ibovespa.",
+      comoLer: "Olhe junto de China/commodities e câmbio.",
+    },
+  },
+  {
+    id: "vale3_change_pct",
+    group: "equities",
+    label: "VALE3 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da VALE3.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "petr4_brl",
+    group: "equities",
+    label: "Petrobras (PETR4)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação PETR4.",
+      porQueImporta: "Sensível a petróleo, câmbio e política.",
+      comoLer: "Olhe junto de petróleo (WTI) e USD/BRL.",
+    },
+  },
+  {
+    id: "petr4_change_pct",
+    group: "equities",
+    label: "PETR4 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da PETR4.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "alos3_brl",
+    group: "equities",
+    label: "Allos (ALOS3)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação ALOS3.",
+      porQueImporta: "Exposição a shopping/consumo e juros.",
+      comoLer: "Juros mais baixos tendem a favorecer.",
+    },
+  },
+  {
+    id: "alos3_change_pct",
+    group: "equities",
+    label: "ALOS3 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da ALOS3.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "bbas3_brl",
+    group: "equities",
+    label: "Banco do Brasil (BBAS3)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação BBAS3.",
+      porQueImporta: "Bancos reagem a juros, crédito e ciclo econômico.",
+      comoLer: "Juros altos podem ajudar margem, mas podem piorar inadimplência.",
+    },
+  },
+  {
+    id: "bbas3_change_pct",
+    group: "equities",
+    label: "BBAS3 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da BBAS3.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "dirr3_brl",
+    group: "equities",
+    label: "Direcional (DIRR3)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação DIRR3.",
+      porQueImporta: "Sensível a crédito e ciclo imobiliário.",
+      comoLer: "Juros e renda disponível tendem a impactar.",
+    },
+  },
+  {
+    id: "dirr3_change_pct",
+    group: "equities",
+    label: "DIRR3 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da DIRR3.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "cmig4_brl",
+    group: "equities",
+    label: "Cemig (CMIG4)",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Cotação da ação CMIG4.",
+      porQueImporta: "Utilities tendem a ser mais defensivas e sensíveis a juros/dividendos.",
+      comoLer: "Cenário de juros e regulação importa bastante.",
+    },
+  },
+  {
+    id: "cmig4_change_pct",
+    group: "equities",
+    label: "CMIG4 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária da CMIG4.",
+      porQueImporta: "Leitura rápida do dia no ativo.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "kncr11_brl",
+    group: "equities",
+    label: "KNCR11 (Kinea)",
+    precision: 2,
+    badge: "FII",
+    help: {
+      oQueE: "Cotação do fundo imobiliário KNCR11.",
+      porQueImporta: "Exposição a crédito imobiliário/recebíveis; sensível a juros e spreads.",
+      comoLer: "Olhe junto de Selic e inflação.",
+    },
+  },
+  {
+    id: "kncr11_change_pct",
+    group: "equities",
+    label: "KNCR11 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do KNCR11.",
+      porQueImporta: "Leitura rápida do dia no FII.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "cpts11_brl",
+    group: "equities",
+    label: "CPTS11 (Capitânia)",
+    precision: 2,
+    badge: "FII",
+    help: {
+      oQueE: "Cotação do fundo imobiliário CPTS11.",
+      porQueImporta: "Sensível a juros/crédito; pode refletir risco e prêmio no segmento.",
+      comoLer: "Olhe junto de Selic/IPCA.",
+    },
+  },
+  {
+    id: "cpts11_change_pct",
+    group: "equities",
+    label: "CPTS11 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do CPTS11.",
+      porQueImporta: "Leitura rápida do dia no FII.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "btlg11_brl",
+    group: "equities",
+    label: "BTLG11 (Logística)",
+    precision: 2,
+    badge: "FII",
+    help: {
+      oQueE: "Cotação do fundo imobiliário BTLG11.",
+      porQueImporta: "Exposição a galpões/logística; pode refletir atividade econômica.",
+      comoLer: "Olhe junto do ciclo e juros.",
+    },
+  },
+  {
+    id: "btlg11_change_pct",
+    group: "equities",
+    label: "BTLG11 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do BTLG11.",
+      porQueImporta: "Leitura rápida do dia no FII.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "trxf11_brl",
+    group: "equities",
+    label: "TRXF11",
+    precision: 2,
+    badge: "FII",
+    help: {
+      oQueE: "Cotação do fundo imobiliário TRXF11.",
+      porQueImporta: "Exposição a imóveis/locação; sensível a juros e atividade.",
+      comoLer: "Olhe junto do ciclo e juros.",
+    },
+  },
+  {
+    id: "trxf11_change_pct",
+    group: "equities",
+    label: "TRXF11 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do TRXF11.",
+      porQueImporta: "Leitura rápida do dia no FII.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "xpml11_brl",
+    group: "equities",
+    label: "XPML11 (Malls)",
+    precision: 2,
+    badge: "FII",
+    help: {
+      oQueE: "Cotação do fundo imobiliário XPML11.",
+      porQueImporta: "Exposição a shoppings; sensível a consumo e juros.",
+      comoLer: "Olhe junto de consumo e juros.",
+    },
+  },
+  {
+    id: "xpml11_change_pct",
+    group: "equities",
+    label: "XPML11 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual diária do XPML11.",
+      porQueImporta: "Leitura rápida do dia no FII.",
       comoLer: "Positivo = alta, negativo = queda.",
     },
   },

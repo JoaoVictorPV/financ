@@ -62,19 +62,37 @@ export async function GET(request: Request) {
   }
 
   // Definições de séries (Yahoo)
+  // Organizado por blocos para ficar intuitivo na UI.
   const seriesDefs: Array<{ id: string; label: string; unit: string; symbol: string }> = [
+    // Câmbio
     { id: "usd_brl", label: "USD/BRL", unit: "BRL", symbol: "BRL=X" },
     { id: "eur_brl", label: "EUR/BRL", unit: "BRL", symbol: "EURBRL=X" },
     { id: "cny_brl", label: "CNY/BRL", unit: "BRL", symbol: "CNYBRL=X" },
+
+    // Cripto
     { id: "btc_usd", label: "Bitcoin", unit: "USD", symbol: "BTC-USD" },
     { id: "eth_usd", label: "Ethereum", unit: "USD", symbol: "ETH-USD" },
+    { id: "sol_usd", label: "Solana", unit: "USD", symbol: "SOL-USD" },
+
+    // Commodities
     { id: "gold_usd", label: "Ouro", unit: "USD/oz", symbol: "XAUUSD=X" },
     { id: "silver_usd", label: "Prata", unit: "USD/oz", symbol: "XAGUSD=X" },
     { id: "oil", label: "Petróleo (WTI)", unit: "USD/bbl", symbol: "CL=F" },
+    { id: "soy", label: "Soja (futuro)", unit: "USD", symbol: "ZS=F" },
+
+    // Bolsas / índices
     { id: "sp500", label: "S&P 500", unit: "pts", symbol: "^GSPC" },
     { id: "nasdaq100", label: "Nasdaq 100", unit: "pts", symbol: "^NDX" },
     { id: "dowj", label: "Dow Jones", unit: "pts", symbol: "^DJI" },
     { id: "ibov", label: "Ibovespa", unit: "pts", symbol: "^BVSP" },
+    { id: "nikkei", label: "Nikkei 225", unit: "pts", symbol: "^N225" },
+    { id: "ftse", label: "FTSE 100", unit: "pts", symbol: "^FTSE" },
+    { id: "stoxx", label: "Euro Stoxx 50", unit: "pts", symbol: "^STOXX50E" },
+    { id: "shanghai", label: "Shanghai Composite", unit: "pts", symbol: "000001.SS" },
+    { id: "ifix", label: "IFIX (FIIs)", unit: "pts", symbol: "IFIX.SA" },
+
+    // ETFs / proxies
+    { id: "remx", label: "Terras Raras (REMX)", unit: "USD", symbol: "REMX" },
   ];
 
   const errors: string[] = [];

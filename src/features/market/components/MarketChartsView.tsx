@@ -58,6 +58,25 @@ export default function MarketChartsView() {
       ? data.series.filter((s) => s.label.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
       : data.series;
 
+    function categoryFor(id: string): string {
+      if (id.endsWith("_brl")) return "Câmbio";
+      if (["btc_usd", "eth_usd", "sol_usd"].includes(id)) return "Cripto";
+      if (["gold_usd", "silver_usd", "oil", "soy"].includes(id)) return "Commodities";
+      if ([
+        "sp500",
+        "nasdaq100",
+        "dowj",
+        "ibov",
+        "nikkei",
+        "ftse",
+        "stoxx",
+        "shanghai",
+        "ifix",
+      ].includes(id)) return "Bolsas";
+      if (["remx"].includes(id)) return "ETFs / Proxies";
+      return "Outros";
+    }
+
     return filtered.map((s) => {
       const x = s.points.map((p) => p[0]);
       const y = s.points.map((p) => p[1]);
@@ -66,6 +85,7 @@ export default function MarketChartsView() {
       return {
         id: s.id,
         title: s.label,
+        category: categoryFor(s.id),
         subtitle: last != null ? `${formatNumber(last, 2)} ${s.unit}` : "—",
         option: {
           backgroundColor: "transparent",
@@ -147,17 +167,29 @@ export default function MarketChartsView() {
       </Card>
 
       <div className="space-y-4">
-        {charts.map((c) => (
-          <Card key={c.id} className="space-y-3">
-            <div>
-              <div className="text-sm font-semibold">{c.title}</div>
-              <div className="text-xs text-[var(--muted)]">{c.subtitle}</div>
+        {charts.map((c, idx) => {
+          const prev = charts[idx - 1];
+          const showHeader = !prev || prev.category !== c.category;
+          return (
+            <div key={c.id} className="space-y-3">
+              {showHeader ? (
+                <div className="px-1 text-xs font-semibold tracking-wide text-[var(--muted)]">
+                  {c.category}
+                </div>
+              ) : null}
+
+              <Card className="space-y-3">
+                <div>
+                  <div className="text-sm font-semibold">{c.title}</div>
+                  <div className="text-xs text-[var(--muted)]">{c.subtitle}</div>
+                </div>
+                <div className="h-40">
+                  <EChart option={c.option} />
+                </div>
+              </Card>
             </div>
-            <div className="h-40">
-              <EChart option={c.option} />
-            </div>
-          </Card>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

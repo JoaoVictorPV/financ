@@ -139,6 +139,13 @@ async function fetchYahooChart(symbol: string) {
   );
 }
 
+type YahooMeta = { regularMarketPrice?: number; chartPreviousClose?: number };
+
+function changePctFromYahooMeta(meta: YahooMeta | undefined): number | undefined {
+  if (meta?.regularMarketPrice == null || meta?.chartPreviousClose == null || meta.chartPreviousClose === 0) return undefined;
+  return (meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose;
+}
+
 function ymdFromBcbDate(dmy: string | undefined): string | null {
   if (!dmy) return null;
   const [dd, mm, yyyy] = dmy.split("/");
@@ -364,6 +371,52 @@ export async function GET() {
     limit(() => fetchYahooChart("000001.SS")),
   ]);
 
+  // IFIX + proxy BDI + ações/FIIs (Yahoo)
+  const [
+    ifixR,
+    bdryR,
+    aaplR,
+    nvdaR,
+    asmlR,
+    meliR,
+    pltrR,
+    hdbR,
+    vale3R,
+    petr4R,
+    alos3R,
+    bbas3R,
+    dirr3R,
+    cmig4R,
+    kncr11R,
+    cpts11R,
+    btlg11R,
+    trxf11R,
+    xpml11R,
+  ] = await Promise.all([
+    limit(() => fetchYahooChart("IFIX.SA")),
+    limit(() => fetchYahooChart("BDRY")),
+
+    limit(() => fetchYahooChart("AAPL")),
+    limit(() => fetchYahooChart("NVDA")),
+    limit(() => fetchYahooChart("ASML")),
+    limit(() => fetchYahooChart("MELI")),
+    limit(() => fetchYahooChart("PLTR")),
+    limit(() => fetchYahooChart("HDB")),
+
+    limit(() => fetchYahooChart("VALE3.SA")),
+    limit(() => fetchYahooChart("PETR4.SA")),
+    limit(() => fetchYahooChart("ALOS3.SA")),
+    limit(() => fetchYahooChart("BBAS3.SA")),
+    limit(() => fetchYahooChart("DIRR3.SA")),
+    limit(() => fetchYahooChart("CMIG4.SA")),
+
+    limit(() => fetchYahooChart("KNCR11.SA")),
+    limit(() => fetchYahooChart("CPTS11.SA")),
+    limit(() => fetchYahooChart("BTLG11.SA")),
+    limit(() => fetchYahooChart("TRXF11.SA")),
+    limit(() => fetchYahooChart("XPML11.SA")),
+  ]);
+
   // Bolsas (Yahoo Chart) - usando mesma estratégia do VIX/IBOV
   const [spxR, ndxR, djiR] = await Promise.all([
     limit(() => fetchYahooChart("^GSPC")),
@@ -420,19 +473,48 @@ export async function GET() {
     ftseR.ok ? null : ftseR.error,
     stoxxR.ok ? null : stoxxR.error,
     shanghaiR.ok ? null : shanghaiR.error,
+
+    ifixR.ok ? null : ifixR.error,
+    bdryR.ok ? null : bdryR.error,
+
+    aaplR.ok ? null : aaplR.error,
+    nvdaR.ok ? null : nvdaR.error,
+    asmlR.ok ? null : asmlR.error,
+    meliR.ok ? null : meliR.error,
+    pltrR.ok ? null : pltrR.error,
+    hdbR.ok ? null : hdbR.error,
+
+    vale3R.ok ? null : vale3R.error,
+    petr4R.ok ? null : petr4R.error,
+    alos3R.ok ? null : alos3R.error,
+    bbas3R.ok ? null : bbas3R.error,
+    dirr3R.ok ? null : dirr3R.error,
+    cmig4R.ok ? null : cmig4R.error,
+
+    kncr11R.ok ? null : kncr11R.error,
+    cpts11R.ok ? null : cpts11R.error,
+    btlg11R.ok ? null : btlg11R.error,
+    trxf11R.ok ? null : trxf11R.error,
+    xpml11R.ok ? null : xpml11R.error,
   ].filter((x): x is string => Boolean(x));
 
   // se falhou algo e temos cache antigo, devolve cache para não quebrar UI
   if (warnings.length > 0 && CACHE) {
+    // Mescla: mantém o que conseguimos atualizar agora, e completa com cache antigo.
+    // Isso evita ficar "congelado" quando só UMA fonte falha.
     const payload: MarketPayload = {
       ...CACHE,
+      fetchedAt: new Date().toISOString(),
+      values: { ...CACHE.values },
       meta: {
         stale: true,
-        note: "Usando cache (falha externa temporária em algumas fontes).",
+        note: "Alguns índices falharam; usando cache apenas para os que faltaram.",
         errors: warnings,
       },
     };
-    return NextResponse.json(payload);
+    // Continua o fluxo normal para tentar preencher valores novos abaixo,
+    // mas já com base no cache (fallback por campo).
+    CACHE = payload;
   }
 
   // sem cache (ou sem falhas): segue normal (se algo falhar e não tem cache, retorna valores parciais)
@@ -548,15 +630,38 @@ export async function GET() {
 
   const brazil_cds_5y_bps = cdsR ?? undefined;
 
-  const ibovMeta = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta : undefined;
-  const spxMeta = spxR.ok ? spxR.data?.chart?.result?.[0]?.meta : undefined;
-  const ndxMeta = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta : undefined;
-  const djiMeta = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta : undefined;
+  const ibovMeta: YahooMeta | undefined = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta : undefined;
+  const spxMeta: YahooMeta | undefined = spxR.ok ? spxR.data?.chart?.result?.[0]?.meta : undefined;
+  const ndxMeta: YahooMeta | undefined = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta : undefined;
+  const djiMeta: YahooMeta | undefined = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta : undefined;
 
-  const nikkeiMeta = nikkeiR.ok ? nikkeiR.data?.chart?.result?.[0]?.meta : undefined;
-  const ftseMeta = ftseR.ok ? ftseR.data?.chart?.result?.[0]?.meta : undefined;
-  const stoxxMeta = stoxxR.ok ? stoxxR.data?.chart?.result?.[0]?.meta : undefined;
-  const shanghaiMeta = shanghaiR.ok ? shanghaiR.data?.chart?.result?.[0]?.meta : undefined;
+  const nikkeiMeta: YahooMeta | undefined = nikkeiR.ok ? nikkeiR.data?.chart?.result?.[0]?.meta : undefined;
+  const ftseMeta: YahooMeta | undefined = ftseR.ok ? ftseR.data?.chart?.result?.[0]?.meta : undefined;
+  const stoxxMeta: YahooMeta | undefined = stoxxR.ok ? stoxxR.data?.chart?.result?.[0]?.meta : undefined;
+  const shanghaiMeta: YahooMeta | undefined = shanghaiR.ok ? shanghaiR.data?.chart?.result?.[0]?.meta : undefined;
+
+  const ifixMeta: YahooMeta | undefined = ifixR.ok ? ifixR.data?.chart?.result?.[0]?.meta : undefined;
+  const bdryMeta: YahooMeta | undefined = bdryR.ok ? bdryR.data?.chart?.result?.[0]?.meta : undefined;
+
+  const aaplMeta: YahooMeta | undefined = aaplR.ok ? aaplR.data?.chart?.result?.[0]?.meta : undefined;
+  const nvdaMeta: YahooMeta | undefined = nvdaR.ok ? nvdaR.data?.chart?.result?.[0]?.meta : undefined;
+  const asmlMeta: YahooMeta | undefined = asmlR.ok ? asmlR.data?.chart?.result?.[0]?.meta : undefined;
+  const meliMeta: YahooMeta | undefined = meliR.ok ? meliR.data?.chart?.result?.[0]?.meta : undefined;
+  const pltrMeta: YahooMeta | undefined = pltrR.ok ? pltrR.data?.chart?.result?.[0]?.meta : undefined;
+  const hdbMeta: YahooMeta | undefined = hdbR.ok ? hdbR.data?.chart?.result?.[0]?.meta : undefined;
+
+  const vale3Meta: YahooMeta | undefined = vale3R.ok ? vale3R.data?.chart?.result?.[0]?.meta : undefined;
+  const petr4Meta: YahooMeta | undefined = petr4R.ok ? petr4R.data?.chart?.result?.[0]?.meta : undefined;
+  const alos3Meta: YahooMeta | undefined = alos3R.ok ? alos3R.data?.chart?.result?.[0]?.meta : undefined;
+  const bbas3Meta: YahooMeta | undefined = bbas3R.ok ? bbas3R.data?.chart?.result?.[0]?.meta : undefined;
+  const dirr3Meta: YahooMeta | undefined = dirr3R.ok ? dirr3R.data?.chart?.result?.[0]?.meta : undefined;
+  const cmig4Meta: YahooMeta | undefined = cmig4R.ok ? cmig4R.data?.chart?.result?.[0]?.meta : undefined;
+
+  const kncr11Meta: YahooMeta | undefined = kncr11R.ok ? kncr11R.data?.chart?.result?.[0]?.meta : undefined;
+  const cpts11Meta: YahooMeta | undefined = cpts11R.ok ? cpts11R.data?.chart?.result?.[0]?.meta : undefined;
+  const btlg11Meta: YahooMeta | undefined = btlg11R.ok ? btlg11R.data?.chart?.result?.[0]?.meta : undefined;
+  const trxf11Meta: YahooMeta | undefined = trxf11R.ok ? trxf11R.data?.chart?.result?.[0]?.meta : undefined;
+  const xpml11Meta: YahooMeta | undefined = xpml11R.ok ? xpml11R.data?.chart?.result?.[0]?.meta : undefined;
 
   const ibov = ibovMeta?.regularMarketPrice;
   const sp500 = spxMeta?.regularMarketPrice;
@@ -570,39 +675,38 @@ export async function GET() {
 
   // variação diária (%) para Bolsas
   // Usamos Yahoo meta.chartPreviousClose, que é a referência mais estável.
-  const ibov_change_pct =
-    ibovMeta?.regularMarketPrice != null && ibovMeta?.chartPreviousClose != null && ibovMeta.chartPreviousClose !== 0
-      ? (ibovMeta.regularMarketPrice - ibovMeta.chartPreviousClose) / ibovMeta.chartPreviousClose
-      : undefined;
-  const sp500_change_pct =
-    spxMeta?.regularMarketPrice != null && spxMeta?.chartPreviousClose != null && spxMeta.chartPreviousClose !== 0
-      ? (spxMeta.regularMarketPrice - spxMeta.chartPreviousClose) / spxMeta.chartPreviousClose
-      : undefined;
-  const nasdaq100_change_pct =
-    ndxMeta?.regularMarketPrice != null && ndxMeta?.chartPreviousClose != null && ndxMeta.chartPreviousClose !== 0
-      ? (ndxMeta.regularMarketPrice - ndxMeta.chartPreviousClose) / ndxMeta.chartPreviousClose
-      : undefined;
-  const dowjones_change_pct =
-    djiMeta?.regularMarketPrice != null && djiMeta?.chartPreviousClose != null && djiMeta.chartPreviousClose !== 0
-      ? (djiMeta.regularMarketPrice - djiMeta.chartPreviousClose) / djiMeta.chartPreviousClose
-      : undefined;
+  const ibov_change_pct = changePctFromYahooMeta(ibovMeta);
+  const sp500_change_pct = changePctFromYahooMeta(spxMeta);
+  const nasdaq100_change_pct = changePctFromYahooMeta(ndxMeta);
+  const dowjones_change_pct = changePctFromYahooMeta(djiMeta);
 
-  const nikkei225_change_pct =
-    nikkeiMeta?.regularMarketPrice != null && nikkeiMeta?.chartPreviousClose != null && nikkeiMeta.chartPreviousClose !== 0
-      ? (nikkeiMeta.regularMarketPrice - nikkeiMeta.chartPreviousClose) / nikkeiMeta.chartPreviousClose
-      : undefined;
-  const ftse100_change_pct =
-    ftseMeta?.regularMarketPrice != null && ftseMeta?.chartPreviousClose != null && ftseMeta.chartPreviousClose !== 0
-      ? (ftseMeta.regularMarketPrice - ftseMeta.chartPreviousClose) / ftseMeta.chartPreviousClose
-      : undefined;
-  const eurostoxx50_change_pct =
-    stoxxMeta?.regularMarketPrice != null && stoxxMeta?.chartPreviousClose != null && stoxxMeta.chartPreviousClose !== 0
-      ? (stoxxMeta.regularMarketPrice - stoxxMeta.chartPreviousClose) / stoxxMeta.chartPreviousClose
-      : undefined;
-  const shanghai_comp_change_pct =
-    shanghaiMeta?.regularMarketPrice != null && shanghaiMeta?.chartPreviousClose != null && shanghaiMeta.chartPreviousClose !== 0
-      ? (shanghaiMeta.regularMarketPrice - shanghaiMeta.chartPreviousClose) / shanghaiMeta.chartPreviousClose
-      : undefined;
+  const nikkei225_change_pct = changePctFromYahooMeta(nikkeiMeta);
+  const ftse100_change_pct = changePctFromYahooMeta(ftseMeta);
+  const eurostoxx50_change_pct = changePctFromYahooMeta(stoxxMeta);
+  const shanghai_comp_change_pct = changePctFromYahooMeta(shanghaiMeta);
+
+  const ifix_change_pct = changePctFromYahooMeta(ifixMeta);
+  const bdry_change_pct = changePctFromYahooMeta(bdryMeta);
+
+  const aapl_change_pct = changePctFromYahooMeta(aaplMeta);
+  const nvda_change_pct = changePctFromYahooMeta(nvdaMeta);
+  const asml_change_pct = changePctFromYahooMeta(asmlMeta);
+  const meli_change_pct = changePctFromYahooMeta(meliMeta);
+  const pltr_change_pct = changePctFromYahooMeta(pltrMeta);
+  const hdb_change_pct = changePctFromYahooMeta(hdbMeta);
+
+  const vale3_change_pct = changePctFromYahooMeta(vale3Meta);
+  const petr4_change_pct = changePctFromYahooMeta(petr4Meta);
+  const alos3_change_pct = changePctFromYahooMeta(alos3Meta);
+  const bbas3_change_pct = changePctFromYahooMeta(bbas3Meta);
+  const dirr3_change_pct = changePctFromYahooMeta(dirr3Meta);
+  const cmig4_change_pct = changePctFromYahooMeta(cmig4Meta);
+
+  const kncr11_change_pct = changePctFromYahooMeta(kncr11Meta);
+  const cpts11_change_pct = changePctFromYahooMeta(cpts11Meta);
+  const btlg11_change_pct = changePctFromYahooMeta(btlg11Meta);
+  const trxf11_change_pct = changePctFromYahooMeta(trxf11Meta);
+  const xpml11_change_pct = changePctFromYahooMeta(xpml11Meta);
 
   const payload: MarketPayload = {
     fetchedAt: new Date().toISOString(),
@@ -650,6 +754,29 @@ export async function GET() {
       eurostoxx50,
       shanghai_comp,
 
+      ifix: ifixMeta?.regularMarketPrice,
+      bdry_usd: bdryMeta?.regularMarketPrice,
+
+      aapl_usd: aaplMeta?.regularMarketPrice,
+      nvda_usd: nvdaMeta?.regularMarketPrice,
+      asml_usd: asmlMeta?.regularMarketPrice,
+      meli_usd: meliMeta?.regularMarketPrice,
+      pltr_usd: pltrMeta?.regularMarketPrice,
+      hdb_usd: hdbMeta?.regularMarketPrice,
+
+      vale3_brl: vale3Meta?.regularMarketPrice,
+      petr4_brl: petr4Meta?.regularMarketPrice,
+      alos3_brl: alos3Meta?.regularMarketPrice,
+      bbas3_brl: bbas3Meta?.regularMarketPrice,
+      dirr3_brl: dirr3Meta?.regularMarketPrice,
+      cmig4_brl: cmig4Meta?.regularMarketPrice,
+
+      kncr11_brl: kncr11Meta?.regularMarketPrice,
+      cpts11_brl: cpts11Meta?.regularMarketPrice,
+      btlg11_brl: btlg11Meta?.regularMarketPrice,
+      trxf11_brl: trxf11Meta?.regularMarketPrice,
+      xpml11_brl: xpml11Meta?.regularMarketPrice,
+
       sp500_change_pct,
       nasdaq100_change_pct,
       dowjones_change_pct,
@@ -659,6 +786,29 @@ export async function GET() {
       ftse100_change_pct,
       eurostoxx50_change_pct,
       shanghai_comp_change_pct,
+
+      ifix_change_pct,
+      bdry_change_pct,
+
+      aapl_change_pct,
+      nvda_change_pct,
+      asml_change_pct,
+      meli_change_pct,
+      pltr_change_pct,
+      hdb_change_pct,
+
+      vale3_change_pct,
+      petr4_change_pct,
+      alos3_change_pct,
+      bbas3_change_pct,
+      dirr3_change_pct,
+      cmig4_change_pct,
+
+      kncr11_change_pct,
+      cpts11_change_pct,
+      btlg11_change_pct,
+      trxf11_change_pct,
+      xpml11_change_pct,
 
       brl_selic_aa,
       brl_ipca_mom,
@@ -704,8 +854,18 @@ export async function GET() {
       fred: "fredgraph.csv",
       stooq: "stooq csv",
     },
-    meta: warnings.length ? { stale: false, note: "Alguns índices estão temporariamente indisponíveis.", errors: warnings } : { stale: false },
+    meta: warnings.length ? { stale: true, note: "Alguns índices estão temporariamente indisponíveis.", errors: warnings } : { stale: false },
   };
+
+  // Se houve warnings e tínhamos cache, completamos campos undefined com o cache antigo.
+  if (warnings.length > 0 && CACHE) {
+    const mergedValues = { ...payload.values };
+    for (const [k, v] of Object.entries(CACHE.values)) {
+      const key = k as keyof typeof mergedValues;
+      if (mergedValues[key] == null) mergedValues[key] = v as any;
+    }
+    payload.values = mergedValues;
+  }
 
   CACHE = payload;
   CACHE_AT = now;
