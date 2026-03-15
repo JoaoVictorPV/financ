@@ -548,6 +548,106 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     },
   },
 
+  {
+    id: "nikkei225",
+    group: "equities",
+    label: "Nikkei 225 (Tóquio)",
+    precision: 0,
+    badge: "Japão",
+    help: {
+      oQueE: "Principal índice da bolsa de Tóquio.",
+      porQueImporta: "Japão é peça-chave da economia global; o índice ajuda a ler risco na Ásia.",
+      comoLer: "Movimentos fortes podem refletir iene, exportadoras e sentimento global.",
+    },
+  },
+  {
+    id: "nikkei225_change_pct",
+    group: "equities",
+    label: "Nikkei 225 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do Nikkei no dia.",
+      porQueImporta: "Leitura rápida do humor do mercado japonês/asiático.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "ftse100",
+    group: "equities",
+    label: "FTSE 100 (Londres)",
+    precision: 0,
+    badge: "Reino Unido",
+    help: {
+      oQueE: "Índice com 100 grandes empresas listadas em Londres.",
+      porQueImporta: "Ajuda a ler Europa/UK e setores como energia e bancos.",
+      comoLer: "Compare com dólar/commodities para entender influência de exportadoras.",
+    },
+  },
+  {
+    id: "ftse100_change_pct",
+    group: "equities",
+    label: "FTSE 100 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do FTSE no dia.",
+      porQueImporta: "Leitura rápida do humor do mercado do Reino Unido.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "eurostoxx50",
+    group: "equities",
+    label: "Euro Stoxx 50 (Europa)",
+    precision: 0,
+    badge: "Europa",
+    help: {
+      oQueE: "Índice com 50 blue chips da zona do euro.",
+      porQueImporta: "Resume o sentimento do mercado europeu.",
+      comoLer: "Europa tende a reagir a juros, energia e crescimento global.",
+    },
+  },
+  {
+    id: "eurostoxx50_change_pct",
+    group: "equities",
+    label: "Euro Stoxx 50 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do Euro Stoxx 50 no dia.",
+      porQueImporta: "Leitura rápida do humor do mercado europeu.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
+  {
+    id: "shanghai_comp",
+    group: "equities",
+    label: "Shanghai Comp. (China)",
+    precision: 0,
+    badge: "China",
+    help: {
+      oQueE: "Índice composto da bolsa de Xangai.",
+      porQueImporta: "Ajuda a ler sentimento e atividade na China (grande impactador de commodities).",
+      comoLer: "Movimentos podem refletir estímulos, crédito e crescimento.",
+    },
+  },
+  {
+    id: "shanghai_comp_change_pct",
+    group: "equities",
+    label: "Shanghai Comp. (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do Shanghai Composite no dia.",
+      porQueImporta: "Leitura rápida do humor do mercado chinês.",
+      comoLer: "Positivo = alta, negativo = queda.",
+    },
+  },
+
   // Metais
   {
     id: "xau_usd",

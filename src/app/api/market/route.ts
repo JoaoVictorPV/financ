@@ -243,7 +243,8 @@ export async function GET() {
     fxR,
     cryptoR,
     selicR,
-    ipcaR,
+    ipcaMomR,
+    ipca12mR,
     t10y2yR,
     m2R,
     dxyR,
@@ -292,11 +293,15 @@ export async function GET() {
       "selic",
       "https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/10?formato=json",
     )),
-    // Observação: o endpoint /ultimos costuma falhar por regra de negócio.
-    // Usamos o endpoint completo + filtramos localmente.
+    // IPCA (m/m): série 433 (histórica). Usamos endpoint completo e filtramos localmente.
     limit(() => safeFetch<BcbSgsRow[]>(
-      "ipca",
+      "ipca_mom",
       "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json",
+    )),
+    // IPCA 12m: série 13522 (já vem acumulado em 12 meses)
+    limit(() => safeFetch<BcbSgsRow[]>(
+      "ipca_12m",
+      "https://api.bcb.gov.br/dados/serie/bcdata.sgs.13522/dados/ultimos/10?formato=json",
     )),
     limit(() => safeFetchText("t10y2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y")),
     limit(() => safeFetchText("m2", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WM2NS")),
@@ -351,6 +356,14 @@ export async function GET() {
     limit(() => fetchYahooChart("^BVSP")),
   ]);
 
+  // Bolsas globais (Yahoo)
+  const [nikkeiR, ftseR, stoxxR, shanghaiR] = await Promise.all([
+    limit(() => fetchYahooChart("^N225")),
+    limit(() => fetchYahooChart("^FTSE")),
+    limit(() => fetchYahooChart("^STOXX50E")),
+    limit(() => fetchYahooChart("000001.SS")),
+  ]);
+
   // Bolsas (Yahoo Chart) - usando mesma estratégia do VIX/IBOV
   const [spxR, ndxR, djiR] = await Promise.all([
     limit(() => fetchYahooChart("^GSPC")),
@@ -362,7 +375,8 @@ export async function GET() {
     fxR.ok ? null : fxR.error,
     cryptoR.ok ? null : cryptoR.error,
     selicR.ok ? null : selicR.error,
-    ipcaR.ok ? null : ipcaR.error,
+    ipcaMomR.ok ? null : ipcaMomR.error,
+    ipca12mR.ok ? null : ipca12mR.error,
     t10y2yR.ok ? null : t10y2yR.error,
     m2R.ok ? null : m2R.error,
     dxyR.ok ? null : dxyR.error,
@@ -402,6 +416,10 @@ export async function GET() {
     spxR.ok ? null : spxR.error,
     ndxR.ok ? null : ndxR.error,
     djiR.ok ? null : djiR.error,
+    nikkeiR.ok ? null : nikkeiR.error,
+    ftseR.ok ? null : ftseR.error,
+    stoxxR.ok ? null : stoxxR.error,
+    shanghaiR.ok ? null : shanghaiR.error,
   ].filter((x): x is string => Boolean(x));
 
   // se falhou algo e temos cache antigo, devolve cache para não quebrar UI
@@ -421,9 +439,12 @@ export async function GET() {
   const fx = fxR.ok ? fxR.data : { rates: {} };
   const crypto = cryptoR.ok ? cryptoR.data : {};
   const selic = selicR.ok ? selicR.data : [];
-  const ipcaAll = ipcaR.ok ? ipcaR.data : [];
-  // Mantém apenas janela recente (24 meses) para reduzir custo e evitar cálculos enormes.
-  const ipca = ipcaAll.slice(-36);
+  const ipcaMomAll = ipcaMomR.ok ? ipcaMomR.data : [];
+  // Mantém apenas janela recente para reduzir custo e evitar cálculos enormes.
+  const ipcaMom = ipcaMomAll.slice(-36);
+
+  const ipca12mAll = ipca12mR.ok ? ipca12mR.data : [];
+  const ipca12mLast = ipca12mAll.at(-1);
 
   const stooqUsdBrl = usdbrlR.ok ? parseStooqCsvRow(usdbrlR.text) : null;
   const stooqEurBrl = eurbrlR.ok ? parseStooqCsvRow(eurbrlR.text) : null;
@@ -466,16 +487,18 @@ export async function GET() {
     ? Number(String(lastSelic.valor).replace(",", ".")) / 100
     : undefined;
 
-  const lastIpca = ipca?.[ipca.length - 1];
+  const lastIpca = ipcaMom?.[ipcaMom.length - 1];
   const brl_ipca_mom = lastIpca && lastIpca.valor != null
     ? (parseBcbNumber(lastIpca.valor) ?? 0) / 100
     : undefined;
 
-  // IPCA 12m (a partir dos últimos 12 meses)
-  const ipcaLast12 = ipca.slice(-12).map((r) => (parseBcbNumber(r.valor) ?? 0) / 100);
-  const brl_ipca_12m = ipcaLast12.length
+  // IPCA 12m (preferência: série 13522). Fallback: compõe últimos 12 meses da série m/m.
+  const brl_ipca_12m_direct = ipca12mLast?.valor != null ? (parseBcbNumber(ipca12mLast.valor) ?? 0) / 100 : undefined;
+  const ipcaLast12 = ipcaMom.slice(-12).map((r) => (parseBcbNumber(r.valor) ?? 0) / 100);
+  const brl_ipca_12m_fallback = ipcaLast12.length
     ? ipcaLast12.reduce((acc, x) => acc * (1 + x), 1) - 1
     : undefined;
+  const brl_ipca_12m = brl_ipca_12m_direct ?? brl_ipca_12m_fallback;
 
   const brl_selic_real_simple =
     brl_selic_aa != null && brl_ipca_12m != null ? brl_selic_aa - brl_ipca_12m : undefined;
@@ -530,10 +553,20 @@ export async function GET() {
   const ndxMeta = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta : undefined;
   const djiMeta = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta : undefined;
 
+  const nikkeiMeta = nikkeiR.ok ? nikkeiR.data?.chart?.result?.[0]?.meta : undefined;
+  const ftseMeta = ftseR.ok ? ftseR.data?.chart?.result?.[0]?.meta : undefined;
+  const stoxxMeta = stoxxR.ok ? stoxxR.data?.chart?.result?.[0]?.meta : undefined;
+  const shanghaiMeta = shanghaiR.ok ? shanghaiR.data?.chart?.result?.[0]?.meta : undefined;
+
   const ibov = ibovMeta?.regularMarketPrice;
   const sp500 = spxMeta?.regularMarketPrice;
   const nasdaq100 = ndxMeta?.regularMarketPrice;
   const dowjones = djiMeta?.regularMarketPrice;
+
+  const nikkei225 = nikkeiMeta?.regularMarketPrice;
+  const ftse100 = ftseMeta?.regularMarketPrice;
+  const eurostoxx50 = stoxxMeta?.regularMarketPrice;
+  const shanghai_comp = shanghaiMeta?.regularMarketPrice;
 
   // variação diária (%) para Bolsas
   // Usamos Yahoo meta.chartPreviousClose, que é a referência mais estável.
@@ -552,6 +585,23 @@ export async function GET() {
   const dowjones_change_pct =
     djiMeta?.regularMarketPrice != null && djiMeta?.chartPreviousClose != null && djiMeta.chartPreviousClose !== 0
       ? (djiMeta.regularMarketPrice - djiMeta.chartPreviousClose) / djiMeta.chartPreviousClose
+      : undefined;
+
+  const nikkei225_change_pct =
+    nikkeiMeta?.regularMarketPrice != null && nikkeiMeta?.chartPreviousClose != null && nikkeiMeta.chartPreviousClose !== 0
+      ? (nikkeiMeta.regularMarketPrice - nikkeiMeta.chartPreviousClose) / nikkeiMeta.chartPreviousClose
+      : undefined;
+  const ftse100_change_pct =
+    ftseMeta?.regularMarketPrice != null && ftseMeta?.chartPreviousClose != null && ftseMeta.chartPreviousClose !== 0
+      ? (ftseMeta.regularMarketPrice - ftseMeta.chartPreviousClose) / ftseMeta.chartPreviousClose
+      : undefined;
+  const eurostoxx50_change_pct =
+    stoxxMeta?.regularMarketPrice != null && stoxxMeta?.chartPreviousClose != null && stoxxMeta.chartPreviousClose !== 0
+      ? (stoxxMeta.regularMarketPrice - stoxxMeta.chartPreviousClose) / stoxxMeta.chartPreviousClose
+      : undefined;
+  const shanghai_comp_change_pct =
+    shanghaiMeta?.regularMarketPrice != null && shanghaiMeta?.chartPreviousClose != null && shanghaiMeta.chartPreviousClose !== 0
+      ? (shanghaiMeta.regularMarketPrice - shanghaiMeta.chartPreviousClose) / shanghaiMeta.chartPreviousClose
       : undefined;
 
   const payload: MarketPayload = {
@@ -595,10 +645,20 @@ export async function GET() {
       dowjones,
       ibov,
 
+      nikkei225,
+      ftse100,
+      eurostoxx50,
+      shanghai_comp,
+
       sp500_change_pct,
       nasdaq100_change_pct,
       dowjones_change_pct,
       ibov_change_pct,
+
+      nikkei225_change_pct,
+      ftse100_change_pct,
+      eurostoxx50_change_pct,
+      shanghai_comp_change_pct,
 
       brl_selic_aa,
       brl_ipca_mom,

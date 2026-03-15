@@ -47,11 +47,22 @@ export type MarketValues = {
   dowjones?: number;
   ibov?: number;
 
+  // Bolsas globais
+  nikkei225?: number;
+  ftse100?: number;
+  eurostoxx50?: number;
+  shanghai_comp?: number;
+
   // Variação diária (percentual)
   sp500_change_pct?: number;
   nasdaq100_change_pct?: number;
   dowjones_change_pct?: number;
   ibov_change_pct?: number;
+
+  nikkei225_change_pct?: number;
+  ftse100_change_pct?: number;
+  eurostoxx50_change_pct?: number;
+  shanghai_comp_change_pct?: number;
 
   // Brasil
   brl_selic_aa?: number;
