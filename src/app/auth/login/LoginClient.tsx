@@ -102,9 +102,11 @@ export default function LoginClient() {
           </button>
         </form>
 
-        <div className="mt-6 text-xs text-[var(--muted)]">
-          Se você ainda não configurou o Supabase, siga o arquivo PLANO_FIN_SYS.md.
-        </div>
+        {!supabase ? (
+          <div className="mt-6 text-xs text-[var(--muted)]">
+            Supabase não configurado neste ambiente.
+          </div>
+        ) : null}
       </div>
     </div>
   );

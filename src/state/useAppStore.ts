@@ -27,6 +27,27 @@ import { migrateLocalSnapshot } from "@/state/utils/migrations";
 
 import type { MarketManualOverrides } from "@/features/market/domain/types";
 
+// helpers para sync com Supabase (snapshot único)
+export function snapshotFromStoreForSync() {
+  const s = useAppStore.getState();
+  const snap: LocalSnapshot = {
+    tags: s.tags,
+    incomeSources: s.incomeSources,
+    cardTags: s.cardTags,
+    account: s.account,
+    transactions: s.transactions,
+    creditCards: s.creditCards,
+    cardPurchases: s.cardPurchases,
+    installmentPlans: s.installmentPlans,
+    cardPayments: s.cardPayments,
+    recurringTemplates: s.recurringTemplates,
+    investments: s.investments,
+    investmentSnapshots: s.investmentSnapshots,
+    marketManual: s.marketManual,
+  };
+  return snap;
+}
+
 const CARD_PAYMENT_TAG_COLOR = "#60a5fa";
 
 type AppState = {

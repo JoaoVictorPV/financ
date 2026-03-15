@@ -104,17 +104,14 @@ export const MARKET_GROUPS: MarketGroup[] = [
 // Curadoria do "Resumo": leitura rápida (sem lotar a tela).
 export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "usd_brl",
-  "brl_selic_aa",
-  "brl_ipca_12m",
-  "dxy",
-  "vix",
-  "wti_usd_bbl",
-  "xau_usd",
-  "sge_usd_oz",
+  "eur_brl",
+  "cny_brl",
   "btc_usd",
+  "brl_selic_aa",
+  "xau_usd",
+  "xag_usd",
+  "wti_usd_bbl",
   "eth_usd",
-  "ibov",
-  "sp500",
 ];
 
 export const MARKET_ITEMS: MarketCatalogItem[] = [
@@ -133,6 +130,30 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "Se sobe, o real enfraquece. Se cai, o real fortalece. Confirme com CDS/juros para entender se é problema local ou global.",
     },
   },
+
+  {
+    id: "eur_brl",
+    group: "overview",
+    label: "EUR/BRL",
+    precision: 3,
+    help: {
+      oQueE: "Quanto 1 euro (EUR) custa em reais (BRL).",
+      porQueImporta: "Afeta viagens/compras na Europa e serve como termômetro de força do euro.",
+      comoLer: "Se EUR/BRL sobe junto com USD/BRL, normalmente é Real fraco. Se EUR/BRL sobe sozinho, euro está fortalecendo.",
+    },
+  },
+
+  {
+    id: "cny_brl",
+    group: "overview",
+    label: "CNY/BRL",
+    precision: 3,
+    help: {
+      oQueE: "Quanto 1 yuan (CNY) custa em reais (BRL).",
+      porQueImporta: "China impacta commodities (Brasil exporta muito). Yuan forte tende a favorecer demanda.",
+      comoLer: "Se CNY enfraquece vs USD (USD/CNY sobe) e commodities caem, pode indicar desaceleração.",
+    },
+  },
   {
     id: "brl_selic_aa",
     group: "overview",
@@ -143,42 +164,6 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       oQueE: "Taxa básica de juros do Brasil.",
       porQueImporta: "Determina custo de crédito e retorno de renda fixa. Impacta o câmbio.",
       comoLer: "Selic alta segura inflação e tende a segurar o dólar, mas pode travar a economia.",
-    },
-  },
-  {
-    id: "brl_ipca_12m",
-    group: "overview",
-    label: "IPCA 12m",
-    precision: 2,
-    badge: "Inflação",
-    help: {
-      oQueE: "Inflação oficial acumulada em 12 meses.",
-      porQueImporta: "Mostra perda de poder de compra e guia decisões de juros.",
-      comoLer: "Se sobe por vários meses, juros tendem a ficar altos por mais tempo.",
-    },
-  },
-  {
-    id: "dxy",
-    group: "overview",
-    label: "DXY",
-    precision: 2,
-    badge: "USD Global",
-    help: {
-      oQueE: "Força do dólar no mundo.",
-      porQueImporta: "Dólar forte costuma piorar emergentes. Dólar fraco costuma aliviar.",
-      comoLer: "Se DXY sobe e o Brasil sofre, é vento contra global. Se DXY está estável e USD/BRL sobe, é problema local.",
-    },
-  },
-  {
-    id: "vix",
-    group: "overview",
-    label: "VIX",
-    precision: 2,
-    badge: "Medo",
-    help: {
-      oQueE: "Volatilidade do mercado americano.",
-      porQueImporta: "VIX alto = stress, fuga do risco.",
-      comoLer: "Acima de 30 geralmente é stress. Acima de 40 é pânico.",
     },
   },
   {
@@ -205,16 +190,16 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       comoLer: "Se ouro sobe com VIX subindo, é movimento defensivo.",
     },
   },
+
   {
-    id: "sge_usd_oz",
+    id: "xag_usd",
     group: "overview",
-    label: "Ouro Xangai",
+    label: "Prata (XAG/USD)",
     precision: 2,
-    badge: "China",
     help: {
-      oQueE: "Ouro negociado em Xangai convertido em USD/oz.",
-      porQueImporta: "Mostra demanda chinesa. Permite comparar com o spot.",
-      comoLer: "Se Xangai > Spot, há prêmio (demanda alta ou restrição local).",
+      oQueE: "Preço da prata em USD por onça.",
+      porQueImporta: "Metal misto: reserva + industrial. Costuma ser mais volátil que o ouro.",
+      comoLer: "Se prata cai junto com cobre/petróleo, pode sinalizar fraqueza industrial. Se sobe com ouro, pode ser stress.",
     },
   },
   {
@@ -229,16 +214,16 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       comoLer: "Se cai com Nasdaq, é risk-off. Se sobe com dólar caindo, é risco-on.",
     },
   },
+
   {
-    id: "sp500",
+    id: "eth_usd",
     group: "overview",
-    label: "S&P 500",
+    label: "Ethereum (USD)",
     precision: 0,
-    badge: "EUA",
     help: {
-      oQueE: "Índice das 500 maiores empresas dos EUA.",
-      porQueImporta: "Principal termômetro de risco do mundo.",
-      comoLer: "Se cai e VIX sobe, é risk-off (fuga do risco).",
+      oQueE: "Preço do Ethereum em dólar.",
+      porQueImporta: "É a rede base de várias aplicações cripto. Em geral, é mais volátil que o BTC.",
+      comoLer: "Em bull markets, ETH pode subir mais que BTC. Em quedas, pode cair mais (risco maior).",
     },
   },
   // FX

@@ -290,9 +290,11 @@ export async function GET() {
       "selic",
       "https://api.bcb.gov.br/dados/serie/bcdata.sgs.432/dados/ultimos/10?formato=json",
     )),
+    // Observação: o endpoint /ultimos costuma falhar por regra de negócio.
+    // Usamos o endpoint completo + filtramos localmente.
     limit(() => safeFetch<BcbSgsRow[]>(
       "ipca",
-      "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/24?formato=json",
+      "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json",
     )),
     limit(() => safeFetchText("t10y2y", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=T10Y2Y")),
     limit(() => safeFetchText("m2", "https://fred.stlouisfed.org/graph/fredgraph.csv?id=WM2NS")),
@@ -417,7 +419,9 @@ export async function GET() {
   const fx = fxR.ok ? fxR.data : { rates: {} };
   const crypto = cryptoR.ok ? cryptoR.data : {};
   const selic = selicR.ok ? selicR.data : [];
-  const ipca = ipcaR.ok ? ipcaR.data : [];
+  const ipcaAll = ipcaR.ok ? ipcaR.data : [];
+  // Mantém apenas janela recente (24 meses) para reduzir custo e evitar cálculos enormes.
+  const ipca = ipcaAll.slice(-36);
 
   const stooqUsdBrl = usdbrlR.ok ? parseStooqCsvRow(usdbrlR.text) : null;
   const stooqEurBrl = eurbrlR.ok ? parseStooqCsvRow(eurbrlR.text) : null;

@@ -1,68 +1,80 @@
 import { NextResponse } from "next/server";
 import type { MarketHistoryPayload, MarketHistorySeries } from "@/features/market/domain/types";
 
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
-let CACHE: MarketHistoryPayload | null = null;
-let CACHE_AT = 0;
+export const revalidate = 3600; // cache do Next (1h)
 
-async function fetchText(url: string, timeoutMs = 8000): Promise<string> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Fin.SYS" },
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-    return await res.text();
-  } finally {
-    clearTimeout(id);
-  }
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
+let CACHE: Record<string, MarketHistoryPayload> = {};
+let CACHE_AT: Record<string, number> = {};
+
+type RangeKey = "3mo" | "6mo" | "1y" | "5y";
+
+function normalizeRange(raw: string | null): RangeKey {
+  if (raw === "3mo" || raw === "6mo" || raw === "1y" || raw === "5y") return raw;
+  return "6mo";
 }
 
-function parseStooqDaily(csv: string): Array<[string, number]> {
-  const lines = csv.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
+type YahooChartResp = {
+  chart?: {
+    result?: Array<{
+      timestamp?: number[];
+      indicators?: {
+        quote?: Array<{ close?: Array<number | null> }>;
+      };
+    }>;
+    error?: unknown;
+  };
+};
+
+async function fetchYahooSeries(symbol: string, range: RangeKey): Promise<Array<[string, number]>> {
+  const encoded = encodeURIComponent(symbol);
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?interval=1d&range=${range}`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Fin.SYS" },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${symbol}`);
+  const json = (await res.json()) as YahooChartResp;
+  const r = json.chart?.result?.[0];
+  if (!r?.timestamp?.length) return [];
+  const closes = r.indicators?.quote?.[0]?.close ?? [];
+
   const out: Array<[string, number]> = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i]!.split(",");
-    if (parts.length < 5) continue;
-    const date = parts[0];
-    const close = Number(parts[4]);
-    if (!date || !Number.isFinite(close)) continue;
-    out.push([date, close]);
+  for (let i = 0; i < r.timestamp.length; i++) {
+    const ts = r.timestamp[i];
+    const close = closes[i];
+    if (!ts || close == null) continue;
+    const d = new Date(ts * 1000);
+    // YYYY-MM-DD
+    const ymd = d.toISOString().slice(0, 10);
+    out.push([ymd, close]);
   }
   return out;
 }
 
-function last6Months(points: Array<[string, number]>): Array<[string, number]> {
-  if (!points.length) return [];
-  const end = new Date(points[points.length - 1]![0]);
-  const start = new Date(end);
-  start.setMonth(start.getMonth() - 6);
-  return points.filter(([d]) => new Date(d) >= start);
-}
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const range = normalizeRange(url.searchParams.get("range"));
 
-export async function GET() {
   const now = Date.now();
-  if (CACHE && now - CACHE_AT < CACHE_TTL_MS) {
-    return NextResponse.json(CACHE);
+  if (CACHE[range] && now - (CACHE_AT[range] ?? 0) < CACHE_TTL_MS) {
+    return NextResponse.json(CACHE[range]);
   }
 
-  const seriesDefs: Array<{ id: string; label: string; unit: string; stooq: string }> = [
-    { id: "usd_brl", label: "USD/BRL", unit: "BRL", stooq: "usdbrl" },
-    { id: "eur_brl", label: "EUR/BRL", unit: "BRL", stooq: "eurbrl" },
-    { id: "cny_brl", label: "CNY/BRL", unit: "BRL", stooq: "cnybrl" },
-    { id: "jpy_brl", label: "JPY/BRL", unit: "BRL", stooq: "jpybrl" },
-    { id: "btc_usd", label: "Bitcoin", unit: "USD", stooq: "btcusd" },
-    { id: "gold_usd", label: "Ouro", unit: "USD/oz", stooq: "xauusd" },
-    { id: "silver_usd", label: "Prata", unit: "USD/oz", stooq: "xagusd" },
-    { id: "oil", label: "Petróleo (WTI)", unit: "USD/bbl", stooq: "cl.f" },
-    { id: "nasdaq", label: "Nasdaq 100", unit: "pts", stooq: "^ndx" },
-    { id: "dowj", label: "Dow Jones", unit: "pts", stooq: "^dji" },
-    { id: "shanghai", label: "Bolsa Xangai", unit: "pts", stooq: "^shc" },
-    { id: "tokyo", label: "Bolsa Tóquio", unit: "pts", stooq: "^nkx" },
+  // Definições de séries (Yahoo)
+  const seriesDefs: Array<{ id: string; label: string; unit: string; symbol: string }> = [
+    { id: "usd_brl", label: "USD/BRL", unit: "BRL", symbol: "BRL=X" },
+    { id: "eur_brl", label: "EUR/BRL", unit: "BRL", symbol: "EURBRL=X" },
+    { id: "cny_brl", label: "CNY/BRL", unit: "BRL", symbol: "CNYBRL=X" },
+    { id: "btc_usd", label: "Bitcoin", unit: "USD", symbol: "BTC-USD" },
+    { id: "eth_usd", label: "Ethereum", unit: "USD", symbol: "ETH-USD" },
+    { id: "gold_usd", label: "Ouro", unit: "USD/oz", symbol: "XAUUSD=X" },
+    { id: "silver_usd", label: "Prata", unit: "USD/oz", symbol: "XAGUSD=X" },
+    { id: "oil", label: "Petróleo (WTI)", unit: "USD/bbl", symbol: "CL=F" },
+    { id: "sp500", label: "S&P 500", unit: "pts", symbol: "^GSPC" },
+    { id: "nasdaq100", label: "Nasdaq 100", unit: "pts", symbol: "^NDX" },
+    { id: "dowj", label: "Dow Jones", unit: "pts", symbol: "^DJI" },
+    { id: "ibov", label: "Ibovespa", unit: "pts", symbol: "^BVSP" },
   ];
 
   const errors: string[] = [];
@@ -70,8 +82,7 @@ export async function GET() {
 
   for (const def of seriesDefs) {
     try {
-      const csv = await fetchText(`https://stooq.com/q/d/l/?s=${def.stooq}&i=d`);
-      const points = last6Months(parseStooqDaily(csv));
+      const points = await fetchYahooSeries(def.symbol, range);
       series.push({ id: def.id, label: def.label, unit: def.unit, points });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -85,8 +96,8 @@ export async function GET() {
     meta: errors.length ? { note: "Alguns gráficos falharam", errors } : undefined,
   };
 
-  CACHE = payload;
-  CACHE_AT = now;
+  CACHE[range] = payload;
+  CACHE_AT[range] = now;
 
   return NextResponse.json(payload);
 }

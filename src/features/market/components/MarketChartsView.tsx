@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
+import Input from "@/components/ui/Input";
 import EChart from "@/features/insights/components/internal/EChart";
 import type { MarketHistoryPayload } from "@/features/market/domain/types";
 
@@ -17,12 +19,14 @@ export default function MarketChartsView() {
   const [data, setData] = useState<MarketHistoryPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<"3mo" | "6mo" | "1y" | "5y">("6mo");
+  const [query, setQuery] = useState("");
 
   async function load() {
     try {
       setError(null);
       setLoading(true);
-      const res = await fetch("/api/market/history", { cache: "no-store" });
+      const res = await fetch(`/api/market/history?range=${range}`, { cache: "no-store" });
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`Falha ao carregar gráficos (HTTP ${res.status}). ${txt.slice(0, 140)}`);
@@ -42,11 +46,16 @@ export default function MarketChartsView() {
     void load();
     const id = setInterval(() => void load(), 10 * 60 * 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [range]);
 
   const charts = useMemo(() => {
     if (!data?.series) return [];
-    return data.series.map((s) => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? data.series.filter((s) => s.label.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+      : data.series;
+
+    return filtered.map((s) => {
       const x = s.points.map((p) => p[0]);
       const y = s.points.map((p) => p[1]);
       const last = y[y.length - 1];
@@ -88,14 +97,14 @@ export default function MarketChartsView() {
         },
       };
     });
-  }, [data]);
+  }, [data, query]);
 
   return (
     <div className="space-y-4">
       <Card className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-base font-semibold">Gráficos (últimos 6 meses)</div>
+            <div className="text-base font-semibold">Gráficos de Mercado</div>
             <div className="mt-1 text-xs text-[var(--muted)]">Auto-update em 10 min</div>
           </div>
           <div className="w-28">
@@ -103,6 +112,26 @@ export default function MarketChartsView() {
               {loading ? "..." : "Atualizar"}
             </Button>
           </div>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {([
+            { id: "3mo", label: "3m" },
+            { id: "6mo", label: "6m" },
+            { id: "1y", label: "1a" },
+            { id: "5y", label: "5a" },
+          ] as const).map((r) => (
+            <Chip key={r.id} active={range === r.id} onClick={() => setRange(r.id)}>
+              {r.label}
+            </Chip>
+          ))}
+        </div>
+
+        <div className="mt-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar gráfico (ex.: petróleo, ouro, dólar, ibov...)"
+          />
         </div>
         {error ? <div className="text-xs text-[var(--danger)]">{error}</div> : null}
       </Card>
