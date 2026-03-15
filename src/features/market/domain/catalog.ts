@@ -113,6 +113,8 @@ export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "wti_usd_bbl",
   "eth_usd",
   "brl_ipca_12m",
+  "sp500_change_pct",
+  "ibov_change_pct",
 ];
 
 export const MARKET_ITEMS: MarketCatalogItem[] = [
