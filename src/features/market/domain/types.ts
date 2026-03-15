@@ -47,6 +47,12 @@ export type MarketValues = {
   dowjones?: number;
   ibov?: number;
 
+  // Variação diária (percentual)
+  sp500_change_pct?: number;
+  nasdaq100_change_pct?: number;
+  dowjones_change_pct?: number;
+  ibov_change_pct?: number;
+
   // Brasil
   brl_selic_aa?: number;
   brl_ipca_mom?: number;

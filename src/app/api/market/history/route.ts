@@ -82,7 +82,25 @@ export async function GET(request: Request) {
 
   for (const def of seriesDefs) {
     try {
-      const points = await fetchYahooSeries(def.symbol, range);
+      // O Yahoo tem instabilidade em alguns pares (ex.: CNYBRL=X)
+      // Se vier com poucos pontos, calculamos CNY/BRL = (USD/BRL) / (USD/CNY)
+      let points = await fetchYahooSeries(def.symbol, range);
+      if (def.id === "cny_brl" && points.length < 10) {
+        const usdbrl = await fetchYahooSeries("BRL=X", range);
+        const usdcny = await fetchYahooSeries("USDCNY=X", range);
+        const byDate = new Map<string, { usdbrl?: number; usdcny?: number }>();
+        for (const [d, v] of usdbrl) byDate.set(d, { ...(byDate.get(d) ?? {}), usdbrl: v });
+        for (const [d, v] of usdcny) byDate.set(d, { ...(byDate.get(d) ?? {}), usdcny: v });
+        points = Array.from(byDate.entries())
+          .map(([d, o]) => {
+            const a = o.usdbrl;
+            const b = o.usdcny;
+            if (a == null || b == null || b === 0) return null;
+            return [d, a / b] as [string, number];
+          })
+          .filter((x): x is [string, number] => Boolean(x))
+          .sort((a, b) => a[0].localeCompare(b[0]));
+      }
       series.push({ id: def.id, label: def.label, unit: def.unit, points });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

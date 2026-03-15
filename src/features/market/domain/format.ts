@@ -37,6 +37,9 @@ export function formatValue(
   if (id.includes("_usd")) {
     return formatMoneyUSD(v, precision ?? 2) + (unit ? ` ${unit}` : "");
   }
+  if (id.includes("_change_pct")) {
+    return formatPercentFromDecimal(v, precision ?? 2);
+  }
   if (id.includes("_aa") || id.includes("_mom") || id.includes("_12m") || id.includes("_real_")) {
     // no backend: alguns já estão em decimal (Selic/IPCA), outros são % (FRED yields)
     // regra: se for muito pequeno, tratar como decimal

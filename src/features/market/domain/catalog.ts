@@ -112,6 +112,7 @@ export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "xag_usd",
   "wti_usd_bbl",
   "eth_usd",
+  "brl_ipca_12m",
 ];
 
 export const MARKET_ITEMS: MarketCatalogItem[] = [
@@ -224,6 +225,19 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       oQueE: "Preço do Ethereum em dólar.",
       porQueImporta: "É a rede base de várias aplicações cripto. Em geral, é mais volátil que o BTC.",
       comoLer: "Em bull markets, ETH pode subir mais que BTC. Em quedas, pode cair mais (risco maior).",
+    },
+  },
+
+  {
+    id: "brl_ipca_12m",
+    group: "overview",
+    label: "IPCA 12m",
+    precision: 2,
+    badge: "Brasil",
+    help: {
+      oQueE: "Inflação oficial (IPCA) acumulada em 12 meses.",
+      porQueImporta: "Mostra perda de poder de compra e influencia diretamente juros e renda fixa.",
+      comoLer: "Se está subindo, juros tendem a ficar mais altos por mais tempo. Se está caindo, abre espaço para cortes.",
     },
   },
   // FX
@@ -458,6 +472,18 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     },
   },
   {
+    id: "sp500_change_pct",
+    group: "equities",
+    label: "S&P 500 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do dia (aprox. de abertura→fechamento).",
+      porQueImporta: "Ajuda a ver rapidamente se o mercado foi de alta ou queda no dia.",
+      comoLer: "Positivo = alta, negativo = queda. Em dias muito voláteis, confira VIX.",
+    },
+  },
+  {
     id: "nasdaq100",
     group: "equities",
     label: "Nasdaq 100",
@@ -469,6 +495,18 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         "É muito sensível a juros: quando juros sobem, empresas de crescimento tendem a sofrer.",
       comoLer:
         "Se Nasdaq cai mais que S&P, geralmente é pressão em tecnologia por juros altos. Se sobe forte, apetite por risco e liquidez melhor.",
+    },
+  },
+  {
+    id: "nasdaq100_change_pct",
+    group: "equities",
+    label: "Nasdaq 100 (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do dia (aprox. de abertura→fechamento).",
+      porQueImporta: "Nasdaq é sensível a juros e costuma oscilar mais.",
+      comoLer: "Alta forte pode indicar risk-on; queda forte pode indicar stress ou juros subindo.",
     },
   },
   {
@@ -486,6 +524,18 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
     },
   },
   {
+    id: "dowjones_change_pct",
+    group: "equities",
+    label: "Dow Jones (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do dia (aprox. de abertura→fechamento).",
+      porQueImporta: "Dow tende a refletir empresas maduras; às vezes cai menos em stress.",
+      comoLer: "Se Dow cai menos que Nasdaq, o mercado está preferindo qualidade/defensivo.",
+    },
+  },
+  {
     id: "ibov",
     group: "equities",
     label: "Ibovespa",
@@ -498,6 +548,18 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       comoLer:
         "Se Ibov cai e USD/BRL sobe ao mesmo tempo, normalmente é pressão local (risco Brasil).",
       exemplos: ["Ibov subindo com dólar caindo → fluxo externo/otimismo."],
+    },
+  },
+  {
+    id: "ibov_change_pct",
+    group: "equities",
+    label: "Ibovespa (var. dia)",
+    precision: 2,
+    badge: "%",
+    help: {
+      oQueE: "Variação percentual do dia (aprox. de abertura→fechamento).",
+      porQueImporta: "Leitura rápida do humor do mercado no Brasil.",
+      comoLer: "Se Ibov cai e USD/BRL sobe, costuma ser pressão local (risco Brasil).",
     },
   },
 

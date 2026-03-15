@@ -61,6 +61,8 @@ function parseStooqCsvRow(csv: string): {
   };
 }
 
+// (reservado para futuras variações via Stooq)
+
 async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 8000) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -131,7 +133,7 @@ function extractFirstNumber(text: string, patterns: RegExp[]): number | undefine
 async function fetchYahooChart(symbol: string) {
   const encoded = encodeURIComponent(symbol);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?interval=1d&range=5d`;
-  return await safeFetch<{ chart: { result?: Array<{ meta?: { regularMarketPrice?: number } }> } }>(
+  return await safeFetch<{ chart: { result?: Array<{ meta?: { regularMarketPrice?: number; chartPreviousClose?: number } }> } }>(
     `yahoo:${symbol}`,
     url,
   );
@@ -523,10 +525,34 @@ export async function GET() {
 
   const brazil_cds_5y_bps = cdsR ?? undefined;
 
-  const ibov = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
-  const sp500 = spxR.ok ? spxR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
-  const nasdaq100 = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
-  const dowjones = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
+  const ibovMeta = ibovR.ok ? ibovR.data?.chart?.result?.[0]?.meta : undefined;
+  const spxMeta = spxR.ok ? spxR.data?.chart?.result?.[0]?.meta : undefined;
+  const ndxMeta = ndxR.ok ? ndxR.data?.chart?.result?.[0]?.meta : undefined;
+  const djiMeta = djiR.ok ? djiR.data?.chart?.result?.[0]?.meta : undefined;
+
+  const ibov = ibovMeta?.regularMarketPrice;
+  const sp500 = spxMeta?.regularMarketPrice;
+  const nasdaq100 = ndxMeta?.regularMarketPrice;
+  const dowjones = djiMeta?.regularMarketPrice;
+
+  // variação diária (%) para Bolsas
+  // Usamos Yahoo meta.chartPreviousClose, que é a referência mais estável.
+  const ibov_change_pct =
+    ibovMeta?.regularMarketPrice != null && ibovMeta?.chartPreviousClose != null && ibovMeta.chartPreviousClose !== 0
+      ? (ibovMeta.regularMarketPrice - ibovMeta.chartPreviousClose) / ibovMeta.chartPreviousClose
+      : undefined;
+  const sp500_change_pct =
+    spxMeta?.regularMarketPrice != null && spxMeta?.chartPreviousClose != null && spxMeta.chartPreviousClose !== 0
+      ? (spxMeta.regularMarketPrice - spxMeta.chartPreviousClose) / spxMeta.chartPreviousClose
+      : undefined;
+  const nasdaq100_change_pct =
+    ndxMeta?.regularMarketPrice != null && ndxMeta?.chartPreviousClose != null && ndxMeta.chartPreviousClose !== 0
+      ? (ndxMeta.regularMarketPrice - ndxMeta.chartPreviousClose) / ndxMeta.chartPreviousClose
+      : undefined;
+  const dowjones_change_pct =
+    djiMeta?.regularMarketPrice != null && djiMeta?.chartPreviousClose != null && djiMeta.chartPreviousClose !== 0
+      ? (djiMeta.regularMarketPrice - djiMeta.chartPreviousClose) / djiMeta.chartPreviousClose
+      : undefined;
 
   const payload: MarketPayload = {
     fetchedAt: new Date().toISOString(),
@@ -568,6 +594,11 @@ export async function GET() {
       nasdaq100,
       dowjones,
       ibov,
+
+      sp500_change_pct,
+      nasdaq100_change_pct,
+      dowjones_change_pct,
+      ibov_change_pct,
 
       brl_selic_aa,
       brl_ipca_mom,
