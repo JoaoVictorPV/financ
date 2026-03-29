@@ -78,6 +78,7 @@ export async function GET(request: Request) {
     { id: "gold_usd", label: "Ouro", unit: "USD/oz", symbol: "XAUUSD=X" },
     { id: "silver_usd", label: "Prata", unit: "USD/oz", symbol: "XAGUSD=X" },
     { id: "oil", label: "Petróleo (WTI)", unit: "USD/bbl", symbol: "CL=F" },
+    { id: "brent", label: "Petróleo (Brent)", unit: "USD/bbl", symbol: "BZ=F" },
     { id: "soy", label: "Soja (futuro)", unit: "USD", symbol: "ZS=F" },
 
     // Bolsas / índices
@@ -93,6 +94,13 @@ export async function GET(request: Request) {
 
     // ETFs / proxies
     { id: "remx", label: "Terras Raras (REMX)", unit: "USD", symbol: "REMX" },
+
+    // Ações (principais)
+    { id: "nvda", label: "Nvidia (NVDA)", unit: "USD", symbol: "NVDA" },
+    { id: "asml", label: "ASML", unit: "USD", symbol: "ASML" },
+    { id: "vale3", label: "Vale (VALE3)", unit: "BRL", symbol: "VALE3.SA" },
+    { id: "petr4", label: "Petrobras (PETR4)", unit: "BRL", symbol: "PETR4.SA" },
+    { id: "bbas3", label: "Banco do Brasil (BBAS3)", unit: "BRL", symbol: "BBAS3.SA" },
   ];
 
   const errors: string[] = [];

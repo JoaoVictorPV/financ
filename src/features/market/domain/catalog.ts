@@ -111,12 +111,22 @@ export const OVERVIEW_IDS: Array<keyof MarketValues> = [
   "xau_usd",
   "xag_usd",
   "wti_usd_bbl",
+  "brent_usd_bbl",
   "soy_usd",
   "eth_usd",
   "brl_ipca_12m",
   "sp500_change_pct",
   "ibov_change_pct",
   "dowjones_change_pct",
+  "nikkei225_change_pct",
+  "ftse100_change_pct",
+  "eurostoxx50_change_pct",
+  "shanghai_comp_change_pct",
+  "vale3_change_pct",
+  "petr4_change_pct",
+  "nvda_change_pct",
+  "asml_change_pct",
+  "bbas3_change_pct",
 ];
 
 export const MARKET_ITEMS: MarketCatalogItem[] = [
@@ -181,6 +191,20 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
       oQueE: "Preço do barril de petróleo.",
       porQueImporta: "Pressiona inflação e custos. Afeta transporte e logística.",
       comoLer: "Se sobe com USD/BRL subindo, tende a pressionar combustíveis.",
+    },
+  },
+  {
+    id: "brent_usd_bbl",
+    group: "overview",
+    label: "Petróleo (Brent)",
+    precision: 2,
+    badge: "Global",
+    help: {
+      oQueE: "Preço do barril de petróleo Brent (referência global).",
+      porQueImporta:
+        "O Brent é a referência mais usada no mundo. Ajuda a entender pressão de inflação/energia global e o custo de importação de combustíveis.",
+      comoLer:
+        "Se Brent sobe junto com USD/BRL, tende a pressionar combustíveis no Brasil. Compare Brent vs WTI para ver diferença regional.",
     },
   },
   {
@@ -1210,6 +1234,35 @@ export const MARKET_ITEMS: MarketCatalogItem[] = [
         { when: "> 100", meaning: "Pressão inflacionária global tende a aumentar." },
         { when: "< 60", meaning: "Pode sinalizar desaceleração global (ou aumento de oferta)." },
       ],
+    },
+  },
+  {
+    id: "brent_usd_bbl",
+    group: "energy",
+    label: "Petróleo (Brent)",
+    precision: 2,
+    unit: "USD/bbl",
+    badge: "Global",
+    help: {
+      oQueE: "Preço do petróleo Brent em USD por barril (referência global).",
+      porQueImporta:
+        "É uma das principais referências mundiais de petróleo. Afeta inflação, energia e cadeias logísticas globalmente.",
+      comoLer:
+        "Brent subindo geralmente pressiona inflação. Se sobe junto de dólar forte, o impacto em países importadores tende a ser maior.",
+    },
+  },
+  {
+    id: "brent_brl_bbl",
+    group: "energy",
+    label: "Petróleo Brent (BRL)",
+    precision: 2,
+    unit: "BRL/bbl",
+    help: {
+      oQueE: "Brent convertido para reais (efeito do câmbio).",
+      porQueImporta:
+        "Mostra o impacto potencial no Brasil combinando preço do petróleo + dólar.",
+      comoLer:
+        "Se Brent em USD está estável mas em BRL sobe, a pressão vem do câmbio (real fraco).",
     },
   },
   {

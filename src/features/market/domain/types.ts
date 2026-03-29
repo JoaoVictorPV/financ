@@ -122,6 +122,8 @@ export type MarketValues = {
   // Commodities (USD)
   wti_usd_bbl?: number;
   wti_brl_bbl?: number;
+  brent_usd_bbl?: number;
+  brent_brl_bbl?: number;
   natgas_usd_mmbtu?: number;
   copper_usd?: number;
   wheat_usd?: number;
@@ -136,6 +138,10 @@ export type MarketValues = {
   heating_oil_usd?: number;
   aluminum_usd?: number;
   nickel_usd?: number;
+
+  // Petróleo: variação diária (%)
+  wti_change_pct?: number;
+  brent_change_pct?: number;
 
   // “Elementos críticos” via ETFs (proxy)
   etf_ura_usd?: number;

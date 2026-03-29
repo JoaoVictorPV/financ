@@ -264,6 +264,7 @@ export async function GET() {
     tips10yR,
     vixR,
     wtiR,
+    brentR,
     natgasR,
     copperR,
     wheatR,
@@ -331,6 +332,8 @@ export async function GET() {
 
     // Commodities / futuros (Stooq)
     limit(() => safeFetchText("wti", "https://stooq.com/q/l/?s=cl.f&f=sd2t2ohlcv&h&e=csv")),
+    // Brent: via Yahoo (BZ=F) porque Stooq tende a retornar N/D
+    limit(() => fetchYahooChart("BZ=F")),
     limit(() => safeFetchText("natgas", "https://stooq.com/q/l/?s=ng.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("copper", "https://stooq.com/q/l/?s=hg.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("wheat", "https://stooq.com/q/l/?s=zw.f&f=sd2t2ohlcv&h&e=csv")),
@@ -442,6 +445,7 @@ export async function GET() {
     tips10yR.ok ? null : tips10yR.error,
     vixR.ok ? null : vixR.error,
     wtiR.ok ? null : wtiR.error,
+    brentR.ok ? null : brentR.error,
     natgasR.ok ? null : natgasR.error,
     copperR.ok ? null : copperR.error,
     wheatR.ok ? null : wheatR.error,
@@ -601,6 +605,17 @@ export async function GET() {
 
   const wti_usd_bbl = wtiR.ok ? parseStooqCsvRow(wtiR.text)?.close ?? undefined : undefined;
   const wti_brl_bbl = wti_usd_bbl != null && usd_brl != null ? wti_usd_bbl * usd_brl : undefined;
+
+  const brentMeta: YahooMeta | undefined = brentR.ok ? brentR.data?.chart?.result?.[0]?.meta : undefined;
+  const brent_usd_bbl = brentMeta?.regularMarketPrice;
+  const brent_brl_bbl = brent_usd_bbl != null && usd_brl != null ? brent_usd_bbl * usd_brl : undefined;
+  const brent_change_pct = changePctFromYahooMeta(brentMeta);
+
+  // WTI também ganha variação diária (%) para facilitar leitura no Resumo
+  const wtiRow = wtiR.ok ? parseStooqCsvRow(wtiR.text) : null;
+  const wti_change_pct = wtiRow?.open != null && wtiRow?.close != null && wtiRow.open !== 0
+    ? (wtiRow.close - wtiRow.open) / wtiRow.open
+    : undefined;
   const natgas_usd_mmbtu = natgasR.ok ? parseStooqCsvRow(natgasR.text)?.close ?? undefined : undefined;
   const copper_usd = copperR.ok ? parseStooqCsvRow(copperR.text)?.close ?? undefined : undefined;
   const wheat_usd = wheatR.ok ? parseStooqCsvRow(wheatR.text)?.close ?? undefined : undefined;
@@ -818,6 +833,8 @@ export async function GET() {
 
       wti_usd_bbl,
       wti_brl_bbl,
+      brent_usd_bbl,
+      brent_brl_bbl,
       natgas_usd_mmbtu,
       copper_usd,
       wheat_usd,
@@ -835,6 +852,9 @@ export async function GET() {
       etf_ura_usd,
       etf_lit_usd,
       etf_remx_usd,
+
+      wti_change_pct,
+      brent_change_pct,
 
       sge_cny_g,
       sge_usd_oz,

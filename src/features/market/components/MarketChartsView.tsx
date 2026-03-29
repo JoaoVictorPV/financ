@@ -61,7 +61,7 @@ export default function MarketChartsView() {
     function categoryFor(id: string): string {
       if (id.endsWith("_brl")) return "Câmbio";
       if (["btc_usd", "eth_usd", "sol_usd"].includes(id)) return "Cripto";
-      if (["gold_usd", "silver_usd", "oil", "soy"].includes(id)) return "Commodities";
+      if (["gold_usd", "silver_usd", "oil", "brent", "soy"].includes(id)) return "Commodities";
       if ([
         "sp500",
         "nasdaq100",
@@ -74,6 +74,7 @@ export default function MarketChartsView() {
         "ifix",
       ].includes(id)) return "Bolsas";
       if (["remx"].includes(id)) return "ETFs / Proxies";
+      if (["nvda", "asml", "vale3", "petr4", "bbas3"].includes(id)) return "Ações";
       return "Outros";
     }
 
