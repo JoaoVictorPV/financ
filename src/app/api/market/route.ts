@@ -264,12 +264,14 @@ export async function GET() {
     tips10yR,
     vixR,
     wtiR,
+    wtiYahooR,
     brentR,
     natgasR,
     copperR,
     wheatR,
     cornR,
     soyR,
+    soyYahooR,
     sugarR,
     coffeeR,
     cottonR,
@@ -332,6 +334,8 @@ export async function GET() {
 
     // Commodities / futuros (Stooq)
     limit(() => safeFetchText("wti", "https://stooq.com/q/l/?s=cl.f&f=sd2t2ohlcv&h&e=csv")),
+    // Fallback WTI via Yahoo (quando Stooq instabiliza)
+    limit(() => fetchYahooChart("CL=F")),
     // Brent: via Yahoo (BZ=F) porque Stooq tende a retornar N/D
     limit(() => fetchYahooChart("BZ=F")),
     limit(() => safeFetchText("natgas", "https://stooq.com/q/l/?s=ng.f&f=sd2t2ohlcv&h&e=csv")),
@@ -339,6 +343,8 @@ export async function GET() {
     limit(() => safeFetchText("wheat", "https://stooq.com/q/l/?s=zw.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("corn", "https://stooq.com/q/l/?s=zc.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("soy", "https://stooq.com/q/l/?s=zs.f&f=sd2t2ohlcv&h&e=csv")),
+    // Fallback Soja via Yahoo (quando Stooq instabiliza)
+    limit(() => fetchYahooChart("ZS=F")),
     limit(() => safeFetchText("sugar", "https://stooq.com/q/l/?s=sb.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("coffee", "https://stooq.com/q/l/?s=kc.f&f=sd2t2ohlcv&h&e=csv")),
     limit(() => safeFetchText("cotton", "https://stooq.com/q/l/?s=ct.f&f=sd2t2ohlcv&h&e=csv")),
@@ -444,13 +450,13 @@ export async function GET() {
     fedFundsR.ok ? null : fedFundsR.error,
     tips10yR.ok ? null : tips10yR.error,
     vixR.ok ? null : vixR.error,
-    wtiR.ok ? null : wtiR.error,
+    (!wtiR.ok && !wtiYahooR.ok) ? `wti: ${wtiR.error} | ${wtiYahooR.error}` : null,
     brentR.ok ? null : brentR.error,
     natgasR.ok ? null : natgasR.error,
     copperR.ok ? null : copperR.error,
     wheatR.ok ? null : wheatR.error,
     cornR.ok ? null : cornR.error,
-    soyR.ok ? null : soyR.error,
+    (!soyR.ok && !soyYahooR.ok) ? `soy: ${soyR.error} | ${soyYahooR.error}` : null,
     sugarR.ok ? null : sugarR.error,
     coffeeR.ok ? null : coffeeR.error,
     cottonR.ok ? null : cottonR.error,
@@ -603,7 +609,8 @@ export async function GET() {
   const tips10y_real_yield = tips10yR.ok ? parseFREDLastNumberFromCsv(tips10yR.text) ?? undefined : undefined;
   const vix = vixR.ok ? vixR.data?.chart?.result?.[0]?.meta?.regularMarketPrice : undefined;
 
-  const wti_usd_bbl = wtiR.ok ? parseStooqCsvRow(wtiR.text)?.close ?? undefined : undefined;
+  const wtiYahooMeta: YahooMeta | undefined = wtiYahooR.ok ? wtiYahooR.data?.chart?.result?.[0]?.meta : undefined;
+  const wti_usd_bbl = wtiR.ok ? (parseStooqCsvRow(wtiR.text)?.close ?? wtiYahooMeta?.regularMarketPrice ?? undefined) : wtiYahooMeta?.regularMarketPrice;
   const wti_brl_bbl = wti_usd_bbl != null && usd_brl != null ? wti_usd_bbl * usd_brl : undefined;
 
   const brentMeta: YahooMeta | undefined = brentR.ok ? brentR.data?.chart?.result?.[0]?.meta : undefined;
@@ -615,12 +622,13 @@ export async function GET() {
   const wtiRow = wtiR.ok ? parseStooqCsvRow(wtiR.text) : null;
   const wti_change_pct = wtiRow?.open != null && wtiRow?.close != null && wtiRow.open !== 0
     ? (wtiRow.close - wtiRow.open) / wtiRow.open
-    : undefined;
+    : changePctFromYahooMeta(wtiYahooMeta);
   const natgas_usd_mmbtu = natgasR.ok ? parseStooqCsvRow(natgasR.text)?.close ?? undefined : undefined;
   const copper_usd = copperR.ok ? parseStooqCsvRow(copperR.text)?.close ?? undefined : undefined;
   const wheat_usd = wheatR.ok ? parseStooqCsvRow(wheatR.text)?.close ?? undefined : undefined;
   const corn_usd = cornR.ok ? parseStooqCsvRow(cornR.text)?.close ?? undefined : undefined;
-  const soy_usd = soyR.ok ? parseStooqCsvRow(soyR.text)?.close ?? undefined : undefined;
+  const soyYahooMeta: YahooMeta | undefined = soyYahooR.ok ? soyYahooR.data?.chart?.result?.[0]?.meta : undefined;
+  const soy_usd = soyR.ok ? (parseStooqCsvRow(soyR.text)?.close ?? soyYahooMeta?.regularMarketPrice ?? undefined) : soyYahooMeta?.regularMarketPrice;
   const sugar_usd = sugarR.ok ? parseStooqCsvRow(sugarR.text)?.close ?? undefined : undefined;
   const coffee_usd = coffeeR.ok ? parseStooqCsvRow(coffeeR.text)?.close ?? undefined : undefined;
   const cotton_usd = cottonR.ok ? parseStooqCsvRow(cottonR.text)?.close ?? undefined : undefined;
