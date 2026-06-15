@@ -122,3 +122,19 @@ export async function saveAllLocal(snapshot: LocalSnapshot): Promise<void> {
     localforage.setItem(KEYS.marketManual, snapshot.marketManual ?? null),
   ]);
 }
+
+export function setAuthToken(token: string) {
+  localStorage.setItem("fin_auth_token", token);
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem("fin_auth_token");
+}
+
+export function isAuthenticated(): boolean {
+  return !!getAuthToken();
+}
+
+export function logout() {
+  localStorage.removeItem("fin_auth_token");
+}

@@ -20,7 +20,8 @@ function writeLastRemoteAt(v: string) {
 }
 
 export async function pullRemoteSnapshot(): Promise<SyncPullResponse> {
-  const res = await fetch("/api/sync/snapshot", { cache: "no-store" });
+  const user_id = "fin_user_default";
+  const res = await fetch(`/api/sync/snapshot?user_id=${user_id}`, { cache: "no-store" });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`SYNC_PULL_FAILED (HTTP ${res.status}) ${txt.slice(0, 140)}`);
@@ -29,15 +30,18 @@ export async function pullRemoteSnapshot(): Promise<SyncPullResponse> {
 }
 
 export async function pushRemoteSnapshot(snapshot: LocalSnapshot, updatedAt?: string): Promise<SyncPushResponse> {
+  const user_id = "fin_user_default";
   const res = await fetch("/api/sync/snapshot", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ snapshot, updated_at: updatedAt }),
+    body: JSON.stringify({ snapshot, updated_at: updatedAt, user_id }),
   });
+
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`SYNC_PUSH_FAILED (HTTP ${res.status}) ${txt.slice(0, 140)}`);
   }
+
   return (await res.json()) as SyncPushResponse;
 }
 
